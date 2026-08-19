@@ -9,7 +9,7 @@
 
 import { type Card, type Suit, SLOT_MAX, cardPoints } from '../engine/cards.ts'
 import type { RoundSpec } from '../engine/rounds.ts'
-import { MIN_RUN_SIZE, MIN_SET_SIZE } from '../engine/rounds.ts'
+import { MIN_RUN_SIZE, MIN_SET_SIZE, isFinalRound } from '../engine/rounds.ts'
 
 /** Slots a card occupies in its suit. An Ace sits at both ends of the scale. */
 function slotsFor(card: Card): number[] {
@@ -67,6 +67,25 @@ export function openProgress(hand: readonly Card[], spec: RoundSpec): number {
   const jokers = hand.filter((card) => card.isJoker).length
   const groups = setGroups(hand)
   const chains = runChains(hand)
+
+  if (isFinalRound(spec.round)) {
+    // Round 7 is a different problem, and treating it like the others is a trap.
+    // Opening means going out, so the melds have to consume the *whole* hand — and
+    // three runs of four is only twelve cards against the thirteen you are holding
+    // when you act. At least one run must run long.
+    //
+    // So nothing is capped at the minimum here. A fourth card in a run is progress
+    // and a fifth is too; what matters is covering every card you hold. Capping at
+    // the minimum would have a hand stop improving at twelve and sit on a
+    // thirteenth card it could never play.
+    // Each chain costs a card to get started, so a lone card of a suit is worth
+    // nothing and a pair barely more. Scoring `length - 1` keeps the bot pushing its
+    // three best chains longer instead of collecting singletons in six suits.
+    const longest = chains
+      .slice(0, spec.runs)
+      .reduce((total, length) => total + Math.max(0, length - 1), 0)
+    return Math.min(hand.length, longest + jokers)
+  }
 
   let progress = 0
   for (let i = 0; i < spec.sets; i++) {

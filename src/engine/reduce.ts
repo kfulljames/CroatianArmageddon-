@@ -225,14 +225,51 @@ function endRound(state: GameState, reason: string): GameState {
 }
 
 /**
- * How many turns of nothing-happening before a round is declared dead.
+ * Absolute cap on the length of a round, as a safety net and nothing more.
  *
- * The written rules have no stalemate provision, because at a real table the
- * position is rare and players would simply agree to move on. Software cannot shrug,
- * so the engine calls it after this many consecutive turns in which no card was
- * kicked, no player opened, and no claim changed anyone's hand size.
+ * This is not a game rule. It exists only so the app can never hang: a round that
+ * has genuinely died is caught exactly by `roundIsDead` below, long before this.
+ * The number is set far beyond any real round — twenty years of play at Dese and
+ * Karl's table has never produced a stalemate, and the draw pile has been recycled
+ * twice in that time.
  */
-export const STALEMATE_TURNS = 40
+export const MAX_TURNS_PER_ROUND = 400
+
+/**
+ * Whether the round has reached a position nobody can ever get out of.
+ *
+ * A hand only shrinks by kicking, so a round can end only while some card that a
+ * meld would accept is still in circulation. Once every card left is one that no
+ * meld will take, no hand can shrink and nobody can go out.
+ *
+ * Two things keep this honest:
+ *
+ *   - It requires everyone to have opened. Until then a new meld could still appear
+ *     and change what counts as playable. This is also why round 7 is never dead:
+ *     nobody opens in round 7 until they go out, so the position is always live.
+ *   - It treats any card of a run's suit as playable, because a run can grow towards
+ *     it. That under-detects rather than over-detects, which is the safe direction —
+ *     it will never cut a round that still had life in it.
+ */
+function roundIsDead(state: GameState): boolean {
+  if (!state.players.every((player) => player.hasOpened)) return false
+
+  const liveRanks = new Set<number>()
+  const liveSuits = new Set<string>()
+  for (const meld of state.melds) {
+    if (meld.kind === 'set') liveRanks.add(meld.rank)
+    else liveSuits.add(meld.suit)
+  }
+
+  const stillPlayable = (card: Card): boolean =>
+    card.isJoker ||
+    (card.rank != null && liveRanks.has(card.rank)) ||
+    (card.suit != null && liveSuits.has(card.suit))
+
+  if (state.drawPile.some(stillPlayable)) return false
+  if (state.discardPile.some(stillPlayable)) return false
+  return !state.players.some((player) => player.hand.some(stillPlayable))
+}
 
 /**
  * Hand the turn to a seat.
@@ -254,11 +291,14 @@ function handOver(state: GameState, seat: number, phase: 'draw' | 'play'): GameS
   if (phase === 'draw' && !canDraw(next)) {
     return endRound(next, 'The cards ran out before anyone went out.')
   }
-  // Nothing has been kicked or claimed for a long time, which means every card still
-  // circulating is one that no meld on the table will accept. Hands can no longer
-  // shrink, so nobody can go out. Score it where it stands.
-  if (next.turnsSinceProgress >= STALEMATE_TURNS) {
+  // Every card still in circulation is one that no meld on the table will accept.
+  // No hand can shrink from here, so nobody can go out. Score it where it stands.
+  if (roundIsDead(next)) {
     return endRound(next, 'Nobody could shed another card — the round is dead.')
+  }
+  // Safety net only; a real round never comes close to this.
+  if (next.turnsSinceProgress >= MAX_TURNS_PER_ROUND) {
+    return endRound(next, 'The round ran impossibly long and was stopped.')
   }
   return next
 }

@@ -90,6 +90,8 @@ export interface GameResult {
   readonly tied: boolean
   /** Rounds that ended because the cards ran out rather than someone going out. */
   readonly exhaustedRounds: number
+  /** Which round numbers those were. */
+  readonly roundsWithoutWinner: readonly number[]
 }
 
 export interface SimulateOptions {
@@ -114,6 +116,7 @@ export function playGame(seed: number, options: SimulateOptions = {}): GameResul
 
   let actions = 0
   let exhaustedRounds = 0
+  const roundsWithoutWinner: number[] = []
   let lastRound = state.round
 
   while (state.phase !== 'gameEnd') {
@@ -133,9 +136,12 @@ export function playGame(seed: number, options: SimulateOptions = {}): GameResul
     checkCardConservation(state, seed)
 
     if (state.round !== lastRound) lastRound = state.round
-    if (state.phase === 'roundEnd') {
+    if (before.phase !== 'roundEnd' && state.phase === 'roundEnd') {
       const wentOut = state.players.some((player) => player.hand.length === 0)
-      if (!wentOut) exhaustedRounds++
+      if (!wentOut) {
+        exhaustedRounds++
+        roundsWithoutWinner.push(state.round)
+      }
     }
   }
 
@@ -158,6 +164,7 @@ export function playGame(seed: number, options: SimulateOptions = {}): GameResul
     winnerId: state.winnerId,
     tied: state.tiedPlayerIds.length > 0,
     exhaustedRounds,
+    roundsWithoutWinner,
   }
 }
 

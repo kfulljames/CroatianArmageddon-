@@ -134,20 +134,33 @@ Decisions taken where the written rules left a gap. Each has a named test in
 8. **An Ace scores 15** whether it was playing high or low.
 9. **Round 7 opens only by going out** — the melds must consume the entire hand.
 
-## Open questions for Dese and Karl
+## Notes from twenty years of play
 
-Things the app hit that the written rules do not cover. The app currently makes a
-choice; the choice is yours to overrule.
+Two things were checked against how the game actually plays at Dese and Karl's table,
+and both corrected the app rather than the rules.
 
-**A round can reach a position where nobody can ever go out.** Hand size only changes
-by kicking, so once every card still circulating is one that no meld on the table
-will accept, no hand can shrink and the round runs forever. Simulation reaches this
-in roughly 5% of rounds 3, 5 and 6, and it is the normal outcome of round 7. At a
-real table people would notice and move on; software cannot shrug. **The app scores
-the round where it stands** after forty turns with nothing kicked or claimed. Is that
-right, or should something else happen — a redeal, or everyone scoring double?
+**A round always ends with someone going out.** In twenty years it has never
+stalemated, and the draw pile has been recycled twice in all that time. The app
+originally fell far short of that, which turned out to be two bugs of its own rather
+than anything missing from the rules:
 
-**Does anyone actually go out in round 7?** In simulation, almost nobody does (95% of
-round sevens end with everyone counting). If that matches how it plays at your table,
-nothing needs changing — it makes going out in round 7 a genuine triumph. If someone
-usually does go out, a rule is probably missing from the written version.
+- A stalemate backstop was ending a round after forty turns of nothing being kicked.
+  In rounds 1–6 that is a fair signal, but in round 7 nobody kicks or opens at all
+  until someone goes out, so it was killing the round before anyone could assemble
+  three runs. The engine now detects a genuinely dead position exactly — every player
+  opened, and no card left anywhere that any meld would accept — instead of guessing
+  from a turn count.
+- The bots measured progress toward "three runs of four", which is twelve cards. In
+  round 7 you hold thirteen when you act and the melds must consume all of them, so
+  one run has to run five long. They built exactly twelve cards' worth and then sat
+  on a thirteenth they could never play.
+
+Rounds 1–6 now end with a winner in every simulated game, and the draw pile is
+recycled about once in every twenty-five rounds. Round 7 ends with someone going out
+around nine times in ten; a real player manages it every time, so the bots are still
+a little weaker than a person there.
+
+**Round 7 always ends with exactly one person going out.** The last card they pick up
+has to fit, and then the whole hand goes down at once; everyone else is left counting.
+That is what the app implements, and `tests/simulate.test.ts` now guards both of these
+so they cannot quietly regress.

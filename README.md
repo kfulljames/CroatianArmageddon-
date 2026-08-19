@@ -52,6 +52,13 @@ absorbed into the melds, nobody can go out. It went on to find four more genuine
 bugs, including openings that left two runs sequential and bots that discarded the
 card they could play while clinging to one they never could.
 
+It also made the game's own history usable as a specification. Dese and Karl have
+never seen a round stalemate in twenty years, and have recycled the draw pile twice
+in all that time. Measuring against that caught two further bugs — a stalemate
+backstop that was ending round 7 before anyone could assemble three runs, and bots
+that valued a run only up to four cards when round 7 needs thirteen across three.
+Rounds 1–6 now finish with a winner in every simulated game.
+
 Runs are modelled on a 1..14 slot scale where slot 1 is the low Ace and slot 14 the
 high Ace. "An Ace is high and low but cannot wrap" then needs no special case: no
 consecutive span contains both ends.
