@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Croatian Armageddon — a 7-round card game created by Dese",
+  "description": "Croatian Armageddon \u2014 a 7-round card game created by Dese",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -13,7 +13,8 @@
     "typecheck": "tsc -b --noEmit",
     "simulate": "tsx src/sim/run.ts",
     "compare": "tsx src/sim/compare.ts",
-    "playthrough": "node scripts/playthrough.mjs"
+    "playthrough": "node scripts/playthrough.mjs",
+    "fixture": "tsx src/sim/fixture.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",

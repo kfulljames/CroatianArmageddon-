@@ -18,6 +18,15 @@ const SIZES: Record<CardSize, { width: number; height: number; rank: number; pip
   lg: { width: 64, height: 90, rank: 27, pip: 22 },
 }
 
+/**
+ * The rank and pip sit in the top-left corner rather than the middle, exactly as they
+ * do on a real card, and for the same reason: cards are almost always overlapped
+ * here — fanned in your hand, or packed into a run that can be fourteen long — and
+ * only the left edge of each one is showing. Centred, a 10 gets sliced in half by
+ * its neighbour.
+ */
+const CORNER_INSET = 3
+
 export interface CardFaceProps {
   card: Card
   size?: CardSize
@@ -65,16 +74,33 @@ export function CardFace({
     >
       {card.isJoker ? (
         <span
-          className="font-black tracking-tight text-purple-700"
-          style={{ fontSize: metrics.pip }}
+          className="absolute font-black tracking-tighter text-purple-700"
+          style={{
+            top: CORNER_INSET,
+            left: CORNER_INSET,
+            // Same corner the rank uses on every other card, so a Joker is still
+            // identifiable when it is buried in a fanned hand.
+            fontSize: Math.round(metrics.pip * 0.78),
+          }}
         >
           JKR
         </span>
       ) : (
         <span
-          className={`flex flex-col items-center leading-none ${isRed ? 'text-red-600' : 'text-neutral-900'}`}
+          className={`absolute flex flex-col items-center leading-none ${isRed ? 'text-red-600' : 'text-neutral-900'}`}
+          style={{ top: CORNER_INSET, left: CORNER_INSET }}
         >
-          <span className="font-bold" style={{ fontSize: metrics.rank }}>
+          <span
+            className="font-bold tabular-nums"
+            style={{
+              fontSize: metrics.rank,
+              // "10" is twice as wide as every other rank; squeeze it rather than
+              // let it run under the card sitting on top of this one.
+              letterSpacing: card.rank === 10 ? '-0.08em' : undefined,
+              transform: card.rank === 10 ? 'scaleX(0.78)' : undefined,
+              transformOrigin: 'left center',
+            }}
+          >
             {rankLabel(card.rank!)}
           </span>
           <span style={{ fontSize: metrics.pip }}>{SUIT_SYMBOL[card.suit!]}</span>

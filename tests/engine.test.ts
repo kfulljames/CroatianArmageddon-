@@ -270,3 +270,71 @@ describe('a full turn', () => {
     expect(after.scoreSheet[0]![base.players[seat]!.id]).toBe(0)
   })
 })
+
+describe('melds have minimum sizes, not fixed ones', () => {
+  it('takes every Jack in the shoe as one three of a kind', () => {
+    // Two decks hold eight Jacks: four suits, twice over.
+    const everyJack = [...hand('JH JC JS JD', 0), ...hand('JH JC JS JD', 1)]
+    const built = buildSet({ kind: 'set', cards: everyJack }, 'p0', 'm1', 0)
+    expect(built.ok).toBe(true)
+    if (built.ok) {
+      expect(built.meld.cards).toHaveLength(8)
+      expect(built.meld.rank).toBe(11)
+    }
+  })
+
+  it('takes a ninth Jack once a Joker stands in for one', () => {
+    const nineJacks = [...hand('JH JC JS JD', 0), ...hand('JH JC JS JD', 1), c('JK0')]
+    const built = buildSet({ kind: 'set', cards: nineJacks }, 'p0', 'm1', 0)
+    expect(built.ok).toBe(true)
+    if (built.ok) expect(built.meld.cards).toHaveLength(9)
+  })
+
+  it('will not split a pile of one rank into two three of a kinds', () => {
+    // Eight Jacks are one meld of eight, never two of three or four.
+    const eightJacks = [...hand('JH JC JS JD', 0), ...hand('JH JC JS JD', 1)]
+    expect(findOpenings([...eightJacks, ...hand('2D')], roundSpec(1))).toHaveLength(0)
+  })
+
+  it('lays a long run as a single run', () => {
+    const built = buildRun({ kind: 'run', cards: hand('2S 3S 4S 5S 6S 7S 8S 9S TS') }, 'p0', 'm1', 0)
+    expect(built.ok).toBe(true)
+    if (built.ok) expect(built.meld.cards).toHaveLength(9)
+  })
+
+  it('lays a whole suit, low Ace through high Ace, as one run of fourteen', () => {
+    const wholeSuit = [...hand('AS 2S 3S 4S 5S 6S 7S 8S 9S TS JS QS KS'), c('AS', 1)]
+    const built = buildRun({ kind: 'run', cards: wholeSuit, startSlot: 1 }, 'p0', 'm1', 0)
+    expect(built.ok).toBe(true)
+    if (built.ok) expect(built.meld.cards).toHaveLength(14)
+  })
+
+  it('keeps accepting kicks onto a meld that is already long', () => {
+    const bigSet = buildSet(
+      { kind: 'set', cards: [...hand('JH JC JS JD', 0), ...hand('JH JC', 1)] },
+      'p0',
+      'm1',
+      0,
+    )
+    if (!bigSet.ok) throw new Error(bigSet.reason)
+    expect(kickOptions(bigSet.meld, c('JS', 1), 5)).toHaveLength(1)
+    expect(kickOptions(bigSet.meld, c('JK1'), 5)).toHaveLength(1)
+
+    const longRun = okRun('2S 3S 4S 5S 6S 7S 8S')
+    expect(kickOptions(longRun, c('9S'), 5).map((option) => option.position)).toEqual(['end'])
+    expect(kickOptions(longRun, c('AS'), 5).map((option) => option.position)).toEqual(['start'])
+  })
+
+  it('opens round 1 with an oversized set alongside a normal one', () => {
+    const plans = findOpenings(
+      [...hand('JH JC JS JD', 0), ...hand('JH JC', 1), ...hand('9D 9H 9C 2S')],
+      roundSpec(1),
+    )
+    expect(plans.length).toBeGreaterThan(0)
+    const jacks = plans[0]!.proposals.find(
+      (proposal) => proposal.kind === 'set' && proposal.cards.some((card) => card.rank === 11),
+    )
+    // All six Jacks go down together rather than three being left stranded in hand.
+    expect(jacks!.cards).toHaveLength(6)
+  })
+})

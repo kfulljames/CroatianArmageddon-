@@ -54,10 +54,16 @@ export function Rules() {
             ))}
           </div>
           <p className="mt-2 text-xs text-white/50">
-            A <strong className="text-white/80">three of a kind</strong> is three or more cards
-            of the same rank — duplicates allowed. A <strong className="text-white/80">run</strong>{' '}
-            is four or more consecutive cards in one suit. An Ace plays high or low, but a run
+            Those are minimums, not fixed sizes. A{' '}
+            <strong className="text-white/80">three of a kind</strong> is three or more cards of
+            the same rank — duplicates allowed, and nine Jacks all go down as one. A{' '}
+            <strong className="text-white/80">run</strong> is four or more consecutive cards in
+            one suit and can run as long as you can make it. An Ace plays high or low, but a run
             cannot wrap around from King through Ace to 2.
+          </p>
+          <p className="mt-2 text-xs text-white/50">
+            What is fixed is the <em>number</em> of melds — never more than the round asks for.
+            That is why a pile of one rank is always a single meld.
           </p>
         </Section>
 

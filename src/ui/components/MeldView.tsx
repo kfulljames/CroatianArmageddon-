@@ -39,7 +39,7 @@ export function MeldView({
   return (
     <div
       className={[
-        'rounded-lg border px-2 py-1.5 transition-colors',
+        'rounded-lg border px-2 pb-0.5 pt-1.5 transition-colors',
         kickable
           ? 'border-emerald-300/80 bg-emerald-400/10'
           : isYours
@@ -59,7 +59,14 @@ export function MeldView({
           <KickSlot onClick={() => onKick('start')} />
         )}
 
-        <div className="flex">
+        {/*
+          Melds have a minimum size, not a fixed one: a three of a kind can hold every
+          Jack in the shoe, and a run can stretch from the low Ace to the high one —
+          fourteen cards, wider than the phone. The cards scroll within the meld while
+          the slots you play into stay pinned either side, so a long meld never pushes
+          them off screen.
+        */}
+        <div className="flex min-w-0 flex-1 overflow-x-auto no-scrollbar pb-3 pt-0.5">
           {meld.cards.map((card: Card, index: number) => {
             const stealable = stealableIndexes.includes(index)
             return (
@@ -74,7 +81,7 @@ export function MeldView({
                   }
                 />
                 {card.isJoker && (
-                  <span className="pointer-events-none absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-black/75 px-1 text-[8px] font-medium text-accent-soft">
+                  <span className="pointer-events-none absolute -bottom-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-black/75 px-1 text-[8px] font-medium text-accent-soft">
                     {jokerInfo.get(index)}
                   </span>
                 )}

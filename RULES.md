@@ -28,13 +28,17 @@ Jokers from each** — 110 cards and six Jokers in total.
 | 6 | 12 | One three of a kind, two runs of four |
 | 7 | 12 | Three runs of four, plus special rules |
 
-A **three of a kind** is three or more cards of the same rank. Duplicates are fine —
-4♥ 4♥ 4♣ is legal. A **run** is four or more consecutive cards in a single suit. An
-Ace plays high or low, but a run may not wrap around: 2-A-K is not a run.
+Those are **minimum** sizes, not fixed ones.
 
-You may build a set of five or a run of seven, but you may never lay *more melds*
-than the round requires. Two three of a kinds of the same rank are not allowed — six
-Kings are one set of six, not two sets of three.
+A **three of a kind** is three *or more* cards of the same rank. Duplicates are fine —
+4♥ 4♥ 4♣ is legal — and there is no upper limit: if you have nine Jacks, they all go
+down together as a single three of a kind. A **run** is four *or more* consecutive
+cards in a single suit, and can stretch as far as you can take it. An Ace plays high
+or low, but a run may not wrap around: 2-A-K is not a run.
+
+What is fixed is the *number* of melds. You may never lay more of them than the round
+requires, which is why a pile of one rank is always one meld: six Kings are a single
+set of six, never two sets of three.
 
 ## Dealing and turns
 
