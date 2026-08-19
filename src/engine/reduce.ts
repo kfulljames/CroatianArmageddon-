@@ -45,6 +45,13 @@ export interface NewGameOptions {
 
 export class IllegalMoveError extends Error {}
 
+/**
+ * Append a line to the game log.
+ *
+ * Entries are written in the past tense on purpose. The log names whoever acted, and
+ * one of those names is the human's — which defaults to "You". Present tense would
+ * force a choice between "Ana takes" and "You take"; past tense agrees with both.
+ */
 function log(state: GameState, playerId: PlayerId | null, text: string): LogEntry[] {
   return [...state.log, { turn: state.turnCounter, round: state.round, playerId, text }]
 }
@@ -401,7 +408,7 @@ export function reduce(state: GameState, action: Action): GameState {
           hand: [...target.hand, card],
         })),
         phase: 'play',
-        log: log(state, player.id, `${player.name} takes ${cardLabel(card)} from the discards.`),
+        log: log(state, player.id, `${player.name} took ${cardLabel(card)} from the discards.`),
       }
     }
 
@@ -423,7 +430,7 @@ export function reduce(state: GameState, action: Action): GameState {
         log: log(
           state,
           player.id,
-          `${player.name} opens with ${melds.map(describeMeld).join(', ')}.`,
+          `${player.name} opened with ${melds.map(describeMeld).join(', ')}.`,
         ),
       }
 
@@ -453,7 +460,7 @@ export function reduce(state: GameState, action: Action): GameState {
         log: log(
           state,
           player.id,
-          `${player.name} kicks ${cardLabel(card)} onto ${describeMeld(updated)}.`,
+          `${player.name} kicked ${cardLabel(card)} onto ${describeMeld(updated)}.`,
         ),
       }
     }
@@ -476,7 +483,7 @@ export function reduce(state: GameState, action: Action): GameState {
         log: log(
           state,
           player.id,
-          `${player.name} buys a Joker out of ${describeMeld(updated)} with ${cardLabel(card)}.`,
+          `${player.name} bought a Joker out of ${describeMeld(updated)} with ${cardLabel(card)}.`,
         ),
       }
     }
@@ -494,7 +501,7 @@ export function reduce(state: GameState, action: Action): GameState {
         })),
         discardPile: [...state.discardPile, card],
         lastThrownCardId: card.id,
-        log: log(state, player.id, `${player.name} discards ${cardLabel(card)}.`),
+        log: log(state, player.id, `${player.name} discarded ${cardLabel(card)}.`),
       }
 
       const handAfter = playerById(thrown, player.id).hand
@@ -532,7 +539,7 @@ export function reduce(state: GameState, action: Action): GameState {
           ...target,
           hand: [...target.hand, card],
         })),
-        log: log(state, responderId, `${responder.name} takes ${cardLabel(card)}.`),
+        log: log(state, responderId, `${responder.name} took ${cardLabel(card)}.`),
       }
 
       if (claim.index === 0) {
@@ -549,7 +556,7 @@ export function reduce(state: GameState, action: Action): GameState {
       claimed = drawInto(claimed, responderId)
       claimed = {
         ...claimed,
-        log: log(claimed, responderId, `${responder.name} takes a penalty card for going out of turn.`),
+        log: log(claimed, responderId, `${responder.name} took a penalty card for going out of turn.`),
       }
       return beginTurn(claimed, nextSeat)
     }
@@ -567,7 +574,7 @@ export function reduce(state: GameState, action: Action): GameState {
             state,
             null,
             tied.length === 1
-              ? `${tied[0]!.name} wins with ${best} points.`
+              ? `${tied[0]!.name} won with ${best} points.`
               : `Tie on ${best} points — settle it with rock paper scissors.`,
           ),
         }
