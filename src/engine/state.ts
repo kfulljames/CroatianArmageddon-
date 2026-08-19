@@ -83,7 +83,23 @@ export interface GameState {
    */
   readonly lastThrownCardId: CardId | null
   readonly melds: readonly Meld[]
+  /**
+   * True once the draw pile has been rebuilt by flipping the discards (Ruling 1).
+   * The resulting order is public information — anyone paying attention saw those
+   * cards go down — so bots are allowed to use it, and the harder ones do.
+   */
+  readonly drawPileKnown: boolean
   readonly claim: ClaimState | null
+  /**
+   * Turns since anything happened that could bring the round closer to an end — a
+   * meld laid, a card kicked, or a hand size changed by a claim.
+   *
+   * Drawing and discarding leaves a hand exactly the same size, so a round only ends
+   * because someone kicks their way down to a last card. When every remaining card
+   * in circulation is one that no meld on the table will accept, that can never
+   * happen and the round would otherwise run forever. See STALEMATE_TURNS.
+   */
+  readonly turnsSinceProgress: number
   readonly log: readonly LogEntry[]
   readonly scoreSheet: ScoreSheet
   /** Set once round 7 is scored. */

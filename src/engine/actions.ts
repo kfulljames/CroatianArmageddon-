@@ -177,15 +177,31 @@ export function legalMoves(state: GameState): LegalMoves {
     }
   }
 
-  return {
+  const moves: LegalMoves = {
     ...NO_MOVES,
     phase: state.phase,
     playerId: player.id,
     kicks,
     steals,
     discardable: player.hand.map((card) => card.id),
-    canOpen: !player.hasOpened && canOpen(player.hand, spec),
+    canOpen: false,
   }
+
+  // Working out whether a hand can open means searching it, which is far and away
+  // the most expensive thing in the engine. Most callers only want to know what is
+  // tappable, so the answer is computed on first read and then remembered.
+  let openable: boolean | null = null
+  Object.defineProperty(moves, 'canOpen', {
+    enumerable: true,
+    get(): boolean {
+      if (openable === null) {
+        openable = !player.hasOpened && canOpen(player.hand, spec)
+      }
+      return openable
+    },
+  })
+
+  return moves
 }
 
 /**

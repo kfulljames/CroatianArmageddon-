@@ -207,6 +207,27 @@ function extendWithLeftovers(
     run: entry.run ? { ...entry.run } : null,
   }))
 
+  /**
+   * Ruling 2 again, this time against growth.
+   *
+   * Two runs can legally be laid with a gap between them, but extending one into
+   * that gap would leave them sequential — which is just one long run wearing a
+   * disguise. The adjacency check during the search cannot see this, because the
+   * runs only reach each other once the leftovers are added.
+   */
+  const wouldCollide = (
+    self: (typeof melds)[number],
+    start: number,
+    end: number,
+  ): boolean =>
+    melds.some((other) => {
+      if (other === self || !other.run || !self.run) return false
+      if (other.run.suit !== self.run.suit) return false
+      const otherStart = other.run.startSlot
+      const otherEnd = other.run.startSlot + other.run.length - 1
+      return end + 1 === otherStart || otherEnd + 1 === start
+    })
+
   let progress = true
   while (progress && pending.length > keepBack) {
     progress = false
@@ -223,7 +244,8 @@ function extendWithLeftovers(
           if (
             lowSlot >= 1 &&
             card.suit === meld.run.suit &&
-            card.rank === slotToRank(lowSlot)
+            card.rank === slotToRank(lowSlot) &&
+            !wouldCollide(meld, lowSlot, meld.run.startSlot + meld.run.length - 1)
           ) {
             meld.cards.unshift(card)
             meld.run.startSlot = lowSlot
@@ -236,7 +258,8 @@ function extendWithLeftovers(
           if (
             highSlot <= SLOT_MAX &&
             card.suit === meld.run.suit &&
-            card.rank === slotToRank(highSlot)
+            card.rank === slotToRank(highSlot) &&
+            !wouldCollide(meld, meld.run.startSlot, highSlot)
           ) {
             meld.cards.push(card)
             meld.run.length++
@@ -292,6 +315,12 @@ export function findOpenings(
 
     if (isFinal && leftover.length > 0) return
     if (!isFinal && leftover.length < 1) return
+
+    // Jokers alone only count as a three of a kind when playing them goes out.
+    const jokerOnlySet = proposals.some(
+      (proposal) => proposal.kind === 'set' && proposal.cards.every((card) => card.isJoker),
+    )
+    if (jokerOnlySet && leftover.length !== 0) return
 
     const usedCardIds = proposals.flatMap((proposal) => proposal.cards.map((card) => card.id))
     const key = proposals

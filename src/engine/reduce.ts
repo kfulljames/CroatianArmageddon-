@@ -73,7 +73,9 @@ export function createGame(options: NewGameOptions): GameState {
     discardPile: [],
     lastThrownCardId: null,
     melds: [],
+    drawPileKnown: false,
     claim: null,
+    turnsSinceProgress: 0,
     log: [],
     scoreSheet: [],
     winnerId: null,
@@ -129,7 +131,9 @@ export function dealRound(state: GameState, round: number, jokersPerDeck = 3): G
     discardPile: [upcard],
     lastThrownCardId: upcard.id,
     melds: [],
+    drawPileKnown: false,
     claim: null,
+    turnsSinceProgress: 0,
     nextMeldSeq: 1,
     log: [
       ...state.log,
@@ -162,6 +166,7 @@ function refillDrawPile(state: GameState): GameState {
     ...state,
     drawPile: flipped,
     discardPile: [top],
+    drawPileKnown: true,
     log: log(state, null, 'Draw pile empty — the discards are flipped over to form a new one.'),
   }
 }
@@ -205,21 +210,47 @@ function endRound(state: GameState, reason: string): GameState {
   }
 }
 
-/** Hand the turn to a seat, refilling the draw pile and catching a dead deal. */
-function beginTurn(state: GameState, seat: number): GameState {
+/**
+ * How many turns of nothing-happening before a round is declared dead.
+ *
+ * The written rules have no stalemate provision, because at a real table the
+ * position is rare and players would simply agree to move on. Software cannot shrug,
+ * so the engine calls it after this many consecutive turns in which no card was
+ * kicked, no player opened, and no claim changed anyone's hand size.
+ */
+export const STALEMATE_TURNS = 40
+
+/**
+ * Hand the turn to a seat.
+ *
+ * `phase` is 'draw' normally, but 'play' when the incoming player has already taken
+ * their card by claiming the discard. Both routes come through here so that the turn
+ * counter and the stalemate check cannot be bypassed by one of them.
+ */
+function handOver(state: GameState, seat: number, phase: 'draw' | 'play'): GameState {
   const next: GameState = {
     ...refillDrawPile(state),
     turnIndex: seat,
     turnCounter: state.turnCounter + 1,
-    phase: 'draw',
+    turnsSinceProgress: state.turnsSinceProgress + 1,
+    phase,
     claim: null,
   }
   // With no draw pile and nothing spare in the discards, nobody can start a turn.
-  // Rather than deadlock, the round ends and everyone counts what they are holding.
-  if (!canDraw(next)) {
+  if (phase === 'draw' && !canDraw(next)) {
     return endRound(next, 'The cards ran out before anyone went out.')
   }
+  // Nothing has been kicked or claimed for a long time, which means every card still
+  // circulating is one that no meld on the table will accept. Hands can no longer
+  // shrink, so nobody can go out. Score it where it stands.
+  if (next.turnsSinceProgress >= STALEMATE_TURNS) {
+    return endRound(next, 'Nobody could shed another card — the round is dead.')
+  }
   return next
+}
+
+function beginTurn(state: GameState, seat: number): GameState {
+  return handOver(state, seat, 'draw')
 }
 
 interface OpeningValidation {
@@ -388,6 +419,7 @@ export function reduce(state: GameState, action: Action): GameState {
         })),
         melds: [...state.melds, ...melds],
         nextMeldSeq: state.nextMeldSeq + melds.length,
+        turnsSinceProgress: 0,
         log: log(
           state,
           player.id,
@@ -417,6 +449,7 @@ export function reduce(state: GameState, action: Action): GameState {
           hand: removeFromHand(target, [card.id]),
         })),
         melds: state.melds.map((candidate) => (candidate.id === meld.id ? updated : candidate)),
+        turnsSinceProgress: 0,
         log: log(
           state,
           player.id,
@@ -504,17 +537,15 @@ export function reduce(state: GameState, action: Action): GameState {
 
       if (claim.index === 0) {
         // The player whose turn is starting claims for free, and it counts as the
-        // draw that opens their turn.
-        return {
-          ...claimed,
-          turnIndex: nextSeat,
-          turnCounter: state.turnCounter + 1,
-          phase: 'play',
-          claim: null,
-        }
+        // draw that opens their turn. It changes nobody's hand size, so it is not
+        // progress — the turn is handed over exactly as any other would be.
+        return handOver(claimed, nextSeat, 'play')
       }
 
       // Ruling 7: out of turn costs one penalty card, and the turn order is untouched.
+      // This is the one claim that genuinely moves the round on, because it is the
+      // only one that changes how many cards a hand holds.
+      claimed = { ...claimed, turnsSinceProgress: 0 }
       claimed = drawInto(claimed, responderId)
       claimed = {
         ...claimed,
