@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Croatian Armageddon</string>
+    <string name="title_activity_main">Croatian Armageddon</string>
+    <string name="package_name">com.croatianarmageddon.app</string>
+    <string name="custom_url_scheme">com.croatianarmageddon.app</string>
+</resources>

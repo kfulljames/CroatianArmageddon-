@@ -1,7 +1,27 @@
 node_modules/
 dist/
+coverage/
 .DS_Store
 *.local
-android/
-ios/
-coverage/
+
+# Capacitor: the native projects are committed so they can be opened directly in
+# Android Studio and Xcode, but their build output and local machine settings are not.
+android/build/
+android/app/build/
+android/.gradle/
+android/.idea/
+android/local.properties
+android/capacitor-cordova-android-plugins/
+ios/App/build/
+ios/App/Pods/
+ios/App/output/
+ios/DerivedData/
+ios/capacitor-cordova-ios-plugins/
+
+# Synced copies of the web build — regenerate with `npx cap sync`.
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+ios/App/App/public/
+ios/App/App/capacitor.config.json
+ios/App/App/config.xml
