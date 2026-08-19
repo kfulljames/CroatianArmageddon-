@@ -6,6 +6,7 @@
  * requirements first, then the awkward bits people actually argue about.
  */
 
+import { DECK_COUNT, JOKER_COUNT } from '../../engine/config.ts'
 import { ROUNDS } from '../../engine/rounds.ts'
 import { useStore } from '../store.ts'
 
@@ -30,6 +31,11 @@ export function Rules() {
         <p className="text-white/60">
           Seven rounds, each with its own opening requirement. Every card left in your hand
           at the end of a round scores against you. Lowest total after round seven wins.
+        </p>
+
+        <p className="mt-3 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-white/60">
+          Played four-handed, with {DECK_COUNT} decks shuffled together and three Jokers
+          from each — {JOKER_COUNT} Jokers in play.
         </p>
 
         <Section title="The rounds">

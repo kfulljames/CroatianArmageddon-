@@ -1,5 +1,5 @@
 import { DIFFICULTIES, DIFFICULTY_LABELS, type Difficulty } from '../../ai/bot.ts'
-import { deckCountForPlayers } from '../../engine/cards.ts'
+import { DECK_COUNT, JOKER_COUNT, PLAYER_COUNT } from '../../engine/config.ts'
 import { useStore } from '../store.ts'
 
 const DIFFICULTY_BLURB: Record<Difficulty, string> = {
@@ -13,8 +13,6 @@ export function Setup() {
   const updateSettings = useStore((store) => store.updateSettings)
   const newGame = useStore((store) => store.newGame)
   const setScreen = useStore((store) => store.setScreen)
-
-  const tableSize = settings.opponents + 1
 
   return (
     <div className="flex h-full flex-col">
@@ -39,24 +37,15 @@ export function Setup() {
           />
         </Field>
 
-        <Field
-          label="Opponents"
-          hint={`${tableSize} at the table · ${deckCountForPlayers(tableSize)} deck${deckCountForPlayers(tableSize) > 1 ? 's' : ''}`}
-        >
-          <div className="flex gap-2">
-            {[2, 3, 4, 5].map((count) => (
-              <Chip
-                key={count}
-                active={settings.opponents === count}
-                onClick={() => updateSettings({ opponents: count })}
-              >
-                {count}
-              </Chip>
-            ))}
+        <Field label="The table">
+          <div className="rounded-lg border border-white/15 bg-white/5 px-3 py-2.5">
+            <p className="text-sm text-white">
+              You and {PLAYER_COUNT - 1} opponents
+            </p>
+            <p className="mt-1 text-[11px] leading-snug text-white/40">
+              {DECK_COUNT} decks shuffled together, {JOKER_COUNT} Jokers in play.
+            </p>
           </div>
-          <p className="mt-1.5 text-[11px] text-white/40">
-            The game is at its best between three and six players.
-          </p>
         </Field>
 
         <Field label="Difficulty">

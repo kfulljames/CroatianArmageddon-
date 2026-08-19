@@ -2,6 +2,7 @@
 
 import type { Card, Rank, Suit } from '../src/engine/cards.ts'
 import type { GameState, PlayerState } from '../src/engine/state.ts'
+import { PLAYER_COUNT } from '../src/engine/config.ts'
 import { createGame } from '../src/engine/reduce.ts'
 
 const SUIT_BY_CODE: Record<string, Suit> = {
@@ -53,10 +54,10 @@ export function hand(specs: string, deck = 0): Card[] {
     .map((spec) => c(spec, deck))
 }
 
-export function newGame(playerCount = 3, seed = 12345): GameState {
+export function newGame(seed = 12345): GameState {
   return createGame({
     seed,
-    players: Array.from({ length: playerCount }, (_, index) => ({
+    players: Array.from({ length: PLAYER_COUNT }, (_, index) => ({
       id: `p${index}`,
       name: `Player ${index}`,
       isHuman: index === 0,

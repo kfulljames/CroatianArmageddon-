@@ -6,6 +6,7 @@
  * being closed mid-round.
  */
 
+import { PLAYER_COUNT } from '../engine/config.ts'
 import type { GameState } from '../engine/state.ts'
 import type { Settings } from './store.ts'
 
@@ -29,8 +30,10 @@ export function loadSaved(): GameState | null {
     const raw = window.localStorage.getItem(GAME_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw) as GameState
-    // Guard against a save written by an older, incompatible build.
+    // Guard against a save written by an older, incompatible build — including one
+    // from before the table was fixed at four players.
     if (typeof parsed?.round !== 'number' || !Array.isArray(parsed?.players)) return null
+    if (parsed.players.length !== PLAYER_COUNT) return null
     return parsed
   } catch {
     return null

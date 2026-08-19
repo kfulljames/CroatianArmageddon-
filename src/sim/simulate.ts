@@ -7,7 +7,7 @@
  * up in volume. Every game runs from a seed, so anything this finds is reproducible.
  */
 
-import { deckCountForPlayers } from '../engine/cards.ts'
+import { PLAYER_COUNT, SHOE_SIZE } from '../engine/config.ts'
 import type { Action } from '../engine/actions.ts'
 import { legalMoves } from '../engine/actions.ts'
 import { createGame, reduce } from '../engine/reduce.ts'
@@ -36,7 +36,7 @@ function checkCardConservation(state: GameState, seed: number): void {
     ...state.players.flatMap((player) => player.hand.map((card) => card.id)),
     ...state.melds.flatMap((meld) => meld.cards.map((card) => card.id)),
   ]
-  const expected = deckCountForPlayers(state.players.length) * 55
+  const expected = SHOE_SIZE
   if (ids.length !== expected) {
     throw new InvariantError(`Card count is ${ids.length}, expected ${expected}`, seed, state)
   }
@@ -93,21 +93,19 @@ export interface GameResult {
 }
 
 export interface SimulateOptions {
-  readonly playerCount?: number
   readonly difficulty?: Difficulty | 'random'
   /** Safety valve: a game that needs more actions than this is treated as stuck. */
   readonly maxActions?: number
 }
 
 export function playGame(seed: number, options: SimulateOptions = {}): GameResult {
-  const playerCount = options.playerCount ?? 4
   const difficulty = options.difficulty ?? 'normal'
   const maxActions = options.maxActions ?? 20000
   const rng = createRng(seed ^ 0x9e3779b9)
 
   let state = createGame({
     seed,
-    players: Array.from({ length: playerCount }, (_, index) => ({
+    players: Array.from({ length: PLAYER_COUNT }, (_, index) => ({
       id: `p${index}`,
       name: `Bot ${index + 1}`,
       isHuman: false,

@@ -5,6 +5,8 @@
  * seeded RNG so that any game can be replayed exactly from its seed.
  */
 
+import { DECK_COUNT, JOKERS_PER_DECK } from './config.ts'
+
 export type Suit = 'clubs' | 'diamonds' | 'hearts' | 'spades'
 
 export const SUITS: readonly Suit[] = ['clubs', 'diamonds', 'hearts', 'spades']
@@ -114,16 +116,11 @@ export function cardFitsSlot(card: Card, suit: Suit, slot: SlotRank): boolean {
   return card.rank === slotToRank(slot)
 }
 
-/** Decks required for a given player count: one per two players, rounded up. */
-export function deckCountForPlayers(playerCount: number): number {
-  return Math.ceil(playerCount / 2)
-}
-
 /**
- * One standard 52-card deck plus jokers. `deckIndex` keeps card ids unique across the
- * several decks that make up a shoe.
+ * One standard 52-card deck plus its Jokers. `deckIndex` keeps card ids unique across
+ * the two decks that make up the shoe.
  */
-export function buildDeck(deckIndex: number, jokersPerDeck = 3): Card[] {
+export function buildDeck(deckIndex: number, jokersPerDeck = JOKERS_PER_DECK): Card[] {
   const cards: Card[] = []
   for (const suit of SUITS) {
     for (const rank of RANKS) {
@@ -141,12 +138,11 @@ export function buildDeck(deckIndex: number, jokersPerDeck = 3): Card[] {
   return cards
 }
 
-/** The full draw pile for a table of this size, before shuffling. */
-export function buildShoe(playerCount: number, jokersPerDeck = 3): Card[] {
-  const deckCount = deckCountForPlayers(playerCount)
+/** The full shoe, before shuffling: two decks and six Jokers. */
+export function buildShoe(): Card[] {
   const cards: Card[] = []
-  for (let i = 0; i < deckCount; i++) {
-    cards.push(...buildDeck(i, jokersPerDeck))
+  for (let i = 0; i < DECK_COUNT; i++) {
+    cards.push(...buildDeck(i))
   }
   return cards
 }

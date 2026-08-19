@@ -2,8 +2,8 @@
 
 A mobile app for the seven-round card game created by **Dese**, with help from Karl.
 
-Play against two to five computer opponents on Android or iOS. Everything runs on the
-device — no account, no network, no server.
+Four-handed: you against three computer opponents, on Android or iOS. Everything runs
+on the device — no account, no network, no server.
 
 The rules are in [RULES.md](RULES.md), including the decisions taken where the
 original written rules left a gap, and the questions the build raised that are Dese's

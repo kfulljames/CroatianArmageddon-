@@ -34,13 +34,14 @@ import {
 } from './state.ts'
 import { type Action, canDraw, isLegal } from './actions.ts'
 import { buildShoe } from './cards.ts'
+import { PLAYER_COUNT } from './config.ts'
 
 export interface NewGameOptions {
   readonly seed: number
+  /** Exactly four, always — the game is not defined for any other number. */
   readonly players: readonly { id: PlayerId; name: string; isHuman: boolean }[]
   /** Seat index of the first dealer. Defaults to 0. */
   readonly dealerIndex?: number
-  readonly jokersPerDeck?: number
 }
 
 export class IllegalMoveError extends Error {}
@@ -58,6 +59,12 @@ function log(state: GameState, playerId: PlayerId | null, text: string): LogEntr
 
 /** Start a fresh 7-round game and deal round 1. */
 export function createGame(options: NewGameOptions): GameState {
+  if (options.players.length !== PLAYER_COUNT) {
+    throw new Error(
+      `Croatian Armageddon is played ${PLAYER_COUNT}-handed; got ${options.players.length} players.`,
+    )
+  }
+
   const players: PlayerState[] = options.players.map((player) => ({
     id: player.id,
     name: player.name,
@@ -90,7 +97,7 @@ export function createGame(options: NewGameOptions): GameState {
     nextMeldSeq: 1,
   }
 
-  return dealRound(base, 1, options.jokersPerDeck ?? 3)
+  return dealRound(base, 1)
 }
 
 /**
@@ -100,10 +107,10 @@ export function createGame(options: NewGameOptions): GameState {
  * dealer — which is the written rule that the starting player advances by one seat
  * every round.
  */
-export function dealRound(state: GameState, round: number, jokersPerDeck = 3): GameState {
+export function dealRound(state: GameState, round: number): GameState {
   const spec = roundSpec(round)
   const rng = createRng(state.rngState)
-  const shoe = shuffle(buildShoe(state.players.length, jokersPerDeck), rng)
+  const shoe = shuffle(buildShoe(), rng)
 
   const hands: Card[][] = state.players.map(() => [])
   let cursor = 0

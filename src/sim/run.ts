@@ -1,7 +1,8 @@
 /**
- * CLI entry point: `npm run simulate -- --games 10000 --players 4 --difficulty normal`
+ * CLI entry point: `npm run simulate -- --games 10000 --difficulty normal`
  */
 
+import { PLAYER_COUNT } from '../engine/config.ts'
 import { simulate, type SimulateOptions } from './simulate.ts'
 import { DIFFICULTIES, type Difficulty } from '../ai/bot.ts'
 
@@ -11,7 +12,6 @@ function flag(name: string, fallback: string): string {
 }
 
 const games = Number(flag('games', '1000'))
-const playerCount = Number(flag('players', '4'))
 const difficultyArg = flag('difficulty', 'normal')
 
 const difficulty: SimulateOptions['difficulty'] =
@@ -22,10 +22,10 @@ const difficulty: SimulateOptions['difficulty'] =
       : 'normal'
 
 const started = Date.now()
-const summary = simulate(games, { playerCount, difficulty })
+const summary = simulate(games, { difficulty })
 const elapsed = ((Date.now() - started) / 1000).toFixed(1)
 
-console.log(`Croatian Armageddon — ${games} games, ${playerCount} players, ${difficultyArg} bots`)
+console.log(`Croatian Armageddon — ${games} games, ${PLAYER_COUNT} players, ${difficultyArg} bots`)
 console.log(`  completed in ${elapsed}s`)
 console.log(`  average actions per game: ${summary.averageActions.toFixed(0)}`)
 console.log(`  average winning score:    ${summary.averageWinningScore.toFixed(1)}`)

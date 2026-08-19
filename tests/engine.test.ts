@@ -2,9 +2,10 @@
 
 import { describe, expect, it } from 'vitest'
 import { allCardIds, c, hand, newGame, withState } from './helpers.ts'
-import { buildShoe, deckCountForPlayers } from '../src/engine/cards.ts'
+import { buildShoe } from '../src/engine/cards.ts'
+import { DECK_COUNT, JOKERS_PER_DECK, PLAYER_COUNT, SHOE_SIZE } from '../src/engine/config.ts'
 import { buildRun, buildSet, describeMeld, kickOptions, applyKick } from '../src/engine/melds.ts'
-import { reduce } from '../src/engine/reduce.ts'
+import { createGame, reduce } from '../src/engine/reduce.ts'
 import { findOpenings } from '../src/engine/openings.ts'
 import { roundSpec } from '../src/engine/rounds.ts'
 
@@ -14,23 +15,49 @@ const okRun = (specs: string, deck = 0) => {
   return built.meld
 }
 
-describe('decks', () => {
-  it('uses one deck per two players, rounded up', () => {
-    expect(deckCountForPlayers(3)).toBe(2)
-    expect(deckCountForPlayers(4)).toBe(2)
-    expect(deckCountForPlayers(5)).toBe(3)
-    expect(deckCountForPlayers(6)).toBe(3)
+describe('the shoe', () => {
+  it('is two decks with three Jokers each — six Jokers, 110 cards', () => {
+    const shoe = buildShoe()
+    expect(DECK_COUNT).toBe(2)
+    expect(JOKERS_PER_DECK).toBe(3)
+    expect(shoe.filter((card) => card.isJoker)).toHaveLength(6)
+    expect(shoe).toHaveLength(110)
+    expect(shoe).toHaveLength(SHOE_SIZE)
   })
 
-  it('includes three Jokers per deck', () => {
-    const shoe = buildShoe(3)
-    expect(shoe).toHaveLength(2 * 55)
-    expect(shoe.filter((card) => card.isJoker)).toHaveLength(6)
+  it('holds exactly two of every face', () => {
+    const shoe = buildShoe()
+    const naturals = shoe.filter((card) => !card.isJoker)
+    expect(naturals).toHaveLength(104)
+    const sevenOfSpades = naturals.filter(
+      (card) => card.rank === 7 && card.suit === 'spades',
+    )
+    expect(sevenOfSpades).toHaveLength(2)
   })
 
   it('gives every physical card a unique id', () => {
-    const shoe = buildShoe(6)
+    const shoe = buildShoe()
     expect(new Set(shoe.map((card) => card.id)).size).toBe(shoe.length)
+  })
+})
+
+describe('the table', () => {
+  it('is always four-handed', () => {
+    expect(PLAYER_COUNT).toBe(4)
+    expect(newGame().players).toHaveLength(4)
+  })
+
+  it('refuses to start with any other number of players', () => {
+    expect(() =>
+      createGame({
+        seed: 1,
+        players: [
+          { id: 'a', name: 'A', isHuman: true },
+          { id: 'b', name: 'B', isHuman: false },
+          { id: 'c', name: 'C', isHuman: false },
+        ],
+      }),
+    ).toThrow(/played 4-handed/)
   })
 })
 
@@ -180,7 +207,7 @@ describe('opening search', () => {
 
 describe('a full turn', () => {
   it('runs draw, open, kick, discard and hands the turn on', () => {
-    const base = newGame(3)
+    const base = newGame()
     const seat = base.turnIndex
     const state = withState(base, {
       round: 1,
@@ -214,11 +241,11 @@ describe('a full turn', () => {
       after = reduce(after, { type: 'claimResponse', want: false })
     }
     expect(after.phase).toBe('draw')
-    expect(after.turnIndex).toBe((seat + 1) % 3)
+    expect(after.turnIndex).toBe((seat + 1) % PLAYER_COUNT)
   })
 
   it('conserves every card through a turn', () => {
-    const base = newGame(4)
+    const base = newGame()
     const before = allCardIds(base).sort()
     let state = reduce(base, { type: 'drawFromPile' })
     state = reduce(state, { type: 'discard', cardId: state.players[state.turnIndex]!.hand[0]!.id })
@@ -229,7 +256,7 @@ describe('a full turn', () => {
   })
 
   it('ends the round when the discarder empties their hand', () => {
-    const base = newGame(3)
+    const base = newGame()
     const seat = base.turnIndex
     const state = withState(base, {
       phase: 'play',

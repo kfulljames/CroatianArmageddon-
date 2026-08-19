@@ -35,7 +35,7 @@ const run = (specs: string, deck = 0, startSlot?: number) => {
 
 describe('Ruling 1 — the draw pile is rebuilt by flipping the discards, never shuffled', () => {
   it('leaves the top discard in place and flips the rest over in order', () => {
-    const base = newGame(3)
+    const base = newGame()
     // Discard pile from oldest to newest. The 9♠ on top stays put.
     const discards = hand('2C 3C 4C 9S')
     const state = withState(base, {
@@ -79,8 +79,8 @@ describe('Ruling 2 — same-suit runs may gap or overlap, but never run sequenti
 
   it('blocks a sequential pair when opening round 3', () => {
     const state = withHand(
-      withState(newGame(3), { round: 3, phase: 'play' }),
-      newGame(3).turnIndex,
+      withState(newGame(), { round: 3, phase: 'play' }),
+      newGame().turnIndex,
       hand('AS 2S 3S 4S 5S 6S 7S 8S KH'),
     )
     const seat = state.turnIndex
@@ -120,7 +120,7 @@ describe('Ruling 3 — melds laid this turn are closed until the next turn', () 
 
 describe('Ruling 4 — in rounds 1–6 the last card must leave as a discard', () => {
   it('does not offer a kick that would empty the hand', () => {
-    const base = newGame(3)
+    const base = newGame()
     const seat = base.turnIndex
     const meld = { ...run('AS 2S 3S 4S'), laidOnTurn: 0, ownerId: base.players[seat]!.id }
     const state = withState(withHand(base, seat, hand('5S')), {
@@ -139,7 +139,7 @@ describe('Ruling 4 — in rounds 1–6 the last card must leave as a discard', (
   })
 
   it('offers the kick as soon as a spare card is held back', () => {
-    const base = newGame(3)
+    const base = newGame()
     const seat = base.turnIndex
     const meld = { ...run('AS 2S 3S 4S'), laidOnTurn: 0, ownerId: base.players[seat]!.id }
     const state = withState(base, {
@@ -154,7 +154,7 @@ describe('Ruling 4 — in rounds 1–6 the last card must leave as a discard', (
   })
 
   it('refuses an opening that would leave nothing to discard', () => {
-    const base = newGame(3)
+    const base = newGame()
     const seat = base.turnIndex
     const state = withState(base, {
       round: 1,
@@ -212,7 +212,7 @@ describe('Ruling 5 — a Joker in a run is pinned to its slot', () => {
 
 describe('Ruling 6 — stealing a Joker does not use up your turn', () => {
   it('leaves the hand the same size and keeps the player on turn', () => {
-    const base = newGame(3)
+    const base = newGame()
     const seat = base.turnIndex
     const meld = { ...run('4S 5S 6S JK'), laidOnTurn: 1, ownerId: 'p1' }
     const state = withState(base, {
@@ -239,7 +239,7 @@ describe('Ruling 6 — stealing a Joker does not use up your turn', () => {
   })
 
   it('is available to a player who has not opened', () => {
-    const base = newGame(3)
+    const base = newGame()
     const seat = base.turnIndex
     const meld = { ...run('4S 5S 6S JK'), laidOnTurn: 1, ownerId: 'p1' }
     const state = withState(base, {
@@ -262,7 +262,7 @@ describe('Ruling 6 — stealing a Joker does not use up your turn', () => {
 
 describe('Ruling 7 — claiming out of turn costs one penalty card and does not move the turn', () => {
   it('gives the claimer the discard plus exactly one penalty', () => {
-    const base = newGame(4)
+    const base = newGame()
     const discarder = base.turnIndex
     const state = withState(base, {
       phase: 'claim',
@@ -285,7 +285,7 @@ describe('Ruling 7 — claiming out of turn costs one penalty card and does not 
   })
 
   it('charges no penalty when the next player claims, and counts as their draw', () => {
-    const base = newGame(4)
+    const base = newGame()
     const discarder = base.turnIndex
     const state = withState(base, {
       phase: 'claim',
@@ -308,7 +308,7 @@ describe('Ruling 7 — claiming out of turn costs one penalty card and does not 
   })
 
   it('closes the discard pile to the next player once it has been claimed away', () => {
-    const base = newGame(4)
+    const base = newGame()
     const discarder = base.turnIndex
     const state = withState(base, {
       phase: 'claim',
@@ -349,7 +349,7 @@ describe('Ruling 8 — scoring', () => {
 
 describe('Ruling 9 — round 7 opens only by going out', () => {
   it('rejects an opening that leaves cards in hand', () => {
-    const base = newGame(3)
+    const base = newGame()
     const seat = base.turnIndex
     const state = withState(base, {
       round: 7,
@@ -374,7 +374,7 @@ describe('Ruling 9 — round 7 opens only by going out', () => {
   })
 
   it('accepts an opening that empties the hand, and ends the game', () => {
-    const base = newGame(3)
+    const base = newGame()
     const seat = base.turnIndex
     const goingOut = hand('AS 2S 3S 4S 5H 6H 7H 8H 2D 3D 4D 5D')
     const state = withState(base, {
@@ -399,7 +399,7 @@ describe('Ruling 9 — round 7 opens only by going out', () => {
   })
 
   it('accepts the whole-suit alternative, low Ace through high Ace', () => {
-    const base = newGame(3)
+    const base = newGame()
     const seat = base.turnIndex
     // Fourteen cards: the Ace appears twice, once at each end.
     const fullSuit = [

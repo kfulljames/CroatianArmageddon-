@@ -23,7 +23,6 @@ export const HUMAN_ID = 'you'
 
 export interface Settings {
   readonly playerName: string
-  readonly opponents: number
   readonly difficulty: Difficulty
   /**
    * When off, the app only interrupts for an out-of-turn claim if the card actually
@@ -35,13 +34,13 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   playerName: 'You',
-  opponents: 3,
   difficulty: 'normal',
   alwaysAsk: false,
   botSpeed: 550,
 }
 
-const BOT_NAMES = ['Ana', 'Marko', 'Ivana', 'Luka', 'Petra']
+/** One per empty seat. The table is always four-handed, so there are always three. */
+const BOT_NAMES = ['Ana', 'Marko', 'Ivana']
 
 export type Screen = 'home' | 'setup' | 'table' | 'rules' | 'scores'
 
@@ -162,11 +161,7 @@ export const useStore = create<Store>((set, get) => {
       const settings = get().settings
       const players = [
         { id: HUMAN_ID, name: settings.playerName || 'You', isHuman: true },
-        ...Array.from({ length: settings.opponents }, (_, index) => ({
-          id: `bot${index}`,
-          name: BOT_NAMES[index] ?? `Bot ${index + 1}`,
-          isHuman: false,
-        })),
+        ...BOT_NAMES.map((name, index) => ({ id: `bot${index}`, name, isHuman: false })),
       ]
       const game = createGame({ seed: Math.floor(Math.random() * 0xffffffff), players })
       set({ game, screen: 'table', selectedCardId: null, lastError: null, openingPickerOpen: false })

@@ -13,9 +13,8 @@ Seven rounds. Each has its own opening requirement. At the end of every round, e
 player scores the cards still in their hand. **Lowest total after round seven wins.**
 A tie is settled with one round of rock paper scissors.
 
-Use one deck per two players, rounded up — three players use two decks, five use
-three — with up to three Jokers per deck. The game is at its best between three and
-six players.
+The game is played **four-handed**, with **two decks shuffled together and three
+Jokers from each** — 110 cards and six Jokers in total.
 
 ## The rounds
 
