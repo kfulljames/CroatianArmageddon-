@@ -1,4 +1,14 @@
-/** Writes a saved-game JSON containing deliberately oversized melds, for UI checks. */
+/**
+ * Writes a saved game to /tmp so the interface can be checked against positions that
+ * are hard to reach by playing.
+ *
+ *   npm run fixture            a fourteen-card run and a nine-card set
+ *   npm run fixture -- --r7    a round 7 hand that can go out this turn
+ *
+ * The second one matters most: going out in round 7 is the climax of the game and
+ * the least reachable moment in it, so it is worth being able to render on demand
+ * rather than waiting for one to occur.
+ */
 import { writeFileSync } from 'node:fs'
 import { createGame, reduce } from '../engine/reduce.ts'
 import { buildRun, buildSet } from '../engine/melds.ts'
@@ -51,3 +61,35 @@ const fixture = {
 
 writeFileSync('/tmp/fixture.json', JSON.stringify(fixture))
 console.log('wrote fixture: run of', wholeSuit.meld.cards.length, 'and set of', everyJack.meld.cards.length)
+
+// --r7: a round 7 position where the human can go out immediately.
+if (process.argv.includes('--r7')) {
+  let base = createGame({
+    seed: 3,
+    players: [
+      { id: 'you', name: 'You', isHuman: true },
+      { id: 'bot0', name: 'Ana', isHuman: false },
+      { id: 'bot1', name: 'Marko', isHuman: false },
+      { id: 'bot2', name: 'Ivana', isHuman: false },
+    ],
+  })
+  base = reduce(base, { type: 'drawFromPile' })
+  // Thirteen cards as three runs, one of them five long, so laying them empties the
+  // hand — which is the only way round 7 may be opened.
+  const goOut = hand('AS 2S 3S 4S 5H 6H 7H 8H 9H 2D 3D 4D 5D')
+  writeFileSync(
+    '/tmp/fixture.json',
+    JSON.stringify({
+      ...base,
+      round: 7,
+      phase: 'play' as const,
+      turnIndex: 0,
+      turnCounter: 12,
+      melds: [],
+      players: base.players.map((p) =>
+        p.id === 'you' ? { ...p, hasOpened: false, hand: goOut } : { ...p, hasOpened: false },
+      ),
+    }),
+  )
+  console.log('wrote round-7 go-out fixture:', goOut.length, 'cards')
+}
