@@ -13,8 +13,13 @@ to answer.
 
 ```bash
 npm install
-npm run dev          # play it in a browser
+npm run dev              # play it in a browser
+npm run dev -- --host    # ...or on your phone, over the same wifi
 ```
+
+`--host` prints a second address on your local network. Open that on a phone and the
+game plays properly to hand — which is the only way to judge whether the cards are
+readable and the taps land where you meant them.
 
 ## Checks
 
@@ -27,6 +32,9 @@ npm run playthrough                         # drive a real browser through a rou
 ```
 
 `npm run playthrough` needs the dev server running.
+
+`npm run icons` rebuilds every icon and splash screen from `assets/source/emblem.png`
+and fans them out into the native projects.
 
 ## How it is put together
 

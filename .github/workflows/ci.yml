@@ -1,0 +1,39 @@
+# Typecheck, test and build on every push.
+#
+# The test run includes the simulated games, so a rules change that deadlocks a round
+# or loses a card fails here rather than on someone's phone.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        # Playwright is only used by the local browser-driven scripts; without this it
+        # would download about 150MB of browsers on every run.
+        run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
