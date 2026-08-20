@@ -1,0 +1,71 @@
+# Build the game and publish it to GitHub Pages.
+#
+# The site is served from a subpath (/CroatianArmageddon-/), which works because the
+# Vite build uses relative asset paths and the web manifest uses a relative start URL.
+# The same property is what lets the built files run inside the Capacitor webview.
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race; always finish the most recent one.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        # Playwright is only used by the local browser-driven tests; without this it
+        # would download about 150MB of browsers on every run.
+        run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        # Includes the simulated games, so a rules change that deadlocks a round or
+        # loses a card cannot reach anyone's phone.
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - uses: actions/configure-pages@v5
+        with:
+          # Turn Pages on if it is not already, rather than failing and waiting for
+          # someone to click through the settings.
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
