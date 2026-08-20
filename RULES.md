@@ -18,15 +18,24 @@ Jokers from each** — 110 cards and six Jokers in total.
 
 ## The rounds
 
-| Round | Cards dealt | Requirement to open |
-| ----- | ----------- | ------------------- |
-| 1 | 9 | Two three of a kinds |
-| 2 | 9 | One three of a kind, one run of four |
-| 3 | 9 | Two runs of four |
-| 4 | 12 | Three three of a kinds |
-| 5 | 12 | Two three of a kinds, one run of four |
-| 6 | 12 | One three of a kind, two runs of four |
-| 7 | 12 | Three runs of four, plus special rules |
+The simplest way to hold the whole game in your head: **the opening grows by exactly
+one card every round.** Six, seven, eight, nine, ten, eleven, twelve. What changes is
+the shape — three of a kinds giving way to runs — but the size only ever ticks up by
+one.
+
+| Round | Cards to lay | Made of | Dealt |
+| ----- | ------------ | ------- | ----- |
+| 1 | **6** | two three of a kinds | 9 |
+| 2 | **7** | a three of a kind + a run of four | 9 |
+| 3 | **8** | two runs of four | 9 |
+| 4 | **9** | three three of a kinds | 12 |
+| 5 | **10** | two three of a kinds + a run of four | 12 |
+| 6 | **11** | a three of a kind + two runs of four | 12 |
+| 7 | **12** | three runs of four, plus special rules | 12 |
+
+You are always dealt more than the opening needs, so there is something to work with —
+except in round 7, where the opening is your whole hand and laying it down is going
+out.
 
 Those are **minimum** sizes, not fixed ones.
 

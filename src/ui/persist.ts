@@ -12,6 +12,7 @@ import type { Settings } from './store.ts'
 
 const GAME_KEY = 'croatian-armageddon:game:v1'
 const SETTINGS_KEY = 'croatian-armageddon:settings:v1'
+const HAND_ORDER_KEY = 'croatian-armageddon:handorder:v1'
 
 export function save(state: GameState): void {
   try {
@@ -66,5 +67,31 @@ export function loadSettings(): Settings | null {
     return raw ? (JSON.parse(raw) as Settings) : null
   } catch {
     return null
+  }
+}
+
+/**
+ * The arrangement of your hand, kept separately from the game itself.
+ *
+ * The rules have no opinion on what order you hold cards in, so this does not belong
+ * in the game state. Keeping it apart also means a stale arrangement can never
+ * corrupt a saved game — at worst it refers to cards you no longer hold, which the
+ * ordering code already discards.
+ */
+export function saveHandOrder(order: readonly string[]): void {
+  try {
+    window.localStorage.setItem(HAND_ORDER_KEY, JSON.stringify(order))
+  } catch {
+    // ignore
+  }
+}
+
+export function loadHandOrder(): string[] {
+  try {
+    const raw = window.localStorage.getItem(HAND_ORDER_KEY)
+    const parsed = raw ? (JSON.parse(raw) as unknown) : null
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : []
+  } catch {
+    return []
   }
 }

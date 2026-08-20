@@ -7,7 +7,7 @@
  */
 
 import { DECK_COUNT, JOKER_COUNT } from '../../engine/config.ts'
-import { ROUNDS } from '../../engine/rounds.ts'
+import { ROUNDS, openingSize } from '../../engine/rounds.ts'
 import { useStore } from '../store.ts'
 
 export function Rules() {
@@ -39,20 +39,37 @@ export function Rules() {
         </p>
 
         <Section title="The rounds">
+          <p className="mb-2 text-xs leading-snug text-white/60">
+            The simplest way to hold the whole game in your head: the opening grows by
+            exactly one card every round. Six, then seven, then eight, all the way to
+            twelve. What changes is the shape — three of a kinds give way to runs — but the
+            size only ever ticks up by one.
+          </p>
+
           <div className="overflow-hidden rounded-lg border border-white/10">
+            <div className="flex items-baseline gap-3 border-b border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10px] uppercase tracking-wide text-white/40">
+              <span className="w-4">#</span>
+              <span className="w-10 shrink-0 text-right">Lay</span>
+              <span>Made of</span>
+            </div>
             {ROUNDS.map((spec) => (
               <div
                 key={spec.round}
                 className="flex items-baseline gap-3 border-b border-white/5 px-3 py-2 last:border-0"
               >
                 <span className="w-4 text-sm font-bold text-accent">{spec.round}</span>
-                <span className="w-16 shrink-0 text-[11px] text-white/40">
-                  {spec.cardsDealt} cards
+                <span className="w-10 shrink-0 text-right text-base font-bold text-white">
+                  {openingSize(spec)}
                 </span>
                 <span className="text-xs text-white/80">{spec.label}</span>
               </div>
             ))}
           </div>
+          <p className="mt-2 text-[11px] text-white/40">
+            You are dealt nine cards for rounds 1&ndash;3 and twelve from round 4 on — always
+            more than the opening needs, so you have something to work with. Except in round
+            7, where the opening is your whole hand.
+          </p>
           <p className="mt-2 text-xs text-white/50">
             Those are minimums, not fixed sizes. A{' '}
             <strong className="text-white/80">three of a kind</strong> is three or more cards of

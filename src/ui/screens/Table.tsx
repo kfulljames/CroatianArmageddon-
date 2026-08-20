@@ -11,12 +11,13 @@ import { useMemo } from 'react'
 import { legalMoves } from '../../engine/actions.ts'
 import { cardLabel, handPoints } from '../../engine/cards.ts'
 import { findOpenings } from '../../engine/openings.ts'
-import { roundSpec } from '../../engine/rounds.ts'
+import { openingSize, roundSpec } from '../../engine/rounds.ts'
 import { playerById, topDiscard } from '../../engine/state.ts'
 import type { GameState } from '../../engine/state.ts'
 import { HUMAN_ID, cardConnects, shouldAskAboutClaim, useStore } from '../store.ts'
 import { CardBack, CardFace, CardSlot } from '../components/CardFace.tsx'
 import { Hand } from '../components/Hand.tsx'
+import { HandControls } from '../components/HandControls.tsx'
 import { MeldView } from '../components/MeldView.tsx'
 import { Opponents } from '../components/Opponents.tsx'
 import { OpeningPicker } from '../components/OpeningPicker.tsx'
@@ -31,6 +32,10 @@ export function Table({ state }: { state: GameState }) {
   const setOpeningPicker = useStore((store) => store.setOpeningPicker)
   const lastError = useStore((store) => store.lastError)
   const settings = useStore((store) => store.settings)
+  const handOrder = useStore((store) => store.handOrder)
+  const arrangeHand = useStore((store) => store.arrangeHand)
+  const setHandSort = useStore((store) => store.setHandSort)
+  const updateSettings = useStore((store) => store.updateSettings)
 
   const you = playerById(state, HUMAN_ID)
   const spec = roundSpec(state.round)
@@ -55,6 +60,11 @@ export function Table({ state }: { state: GameState }) {
     [yourTurn, moves.canOpen, you.hand, spec],
   )
 
+  const handLayout = useMemo(
+    () => ({ mode: settings.handSort, aceHigh: settings.aceHigh, customOrder: handOrder }),
+    [settings.handSort, settings.aceHigh, handOrder],
+  )
+
   const recentLog = state.log.slice(-2)
 
   return (
@@ -66,7 +76,9 @@ export function Table({ state }: { state: GameState }) {
             <span className="truncate text-[11px] text-white/50">{spec.label}</span>
           </div>
           <div className="text-[10px] text-white/40">
-            {you.hasOpened ? 'You are open' : `You need: ${requirementText(spec.sets, spec.runs)}`}
+            {you.hasOpened
+              ? 'You are open'
+              : `Lay ${openingSize(spec)}: ${requirementText(spec.sets, spec.runs)}`}
           </div>
         </div>
         <div className="flex shrink-0 gap-1">
@@ -152,10 +164,18 @@ export function Table({ state }: { state: GameState }) {
           </div>
         )}
 
-        <div className="pb-1 pt-3">
+        <div className="pb-1 pt-2">
+          <HandControls
+            mode={settings.handSort}
+            aceHigh={settings.aceHigh}
+            onSort={setHandSort}
+            onAceHigh={(aceHigh) => updateSettings({ aceHigh })}
+          />
           <Hand
             cards={you.hand}
+            layout={handLayout}
             selectedCardId={selectedCardId}
+            onArrange={arrangeHand}
             onSelect={
               yourTurn && state.phase === 'play'
                 ? (cardId) => selectCard(cardId === selectedCardId ? null : cardId)

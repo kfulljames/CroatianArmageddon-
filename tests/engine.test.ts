@@ -7,7 +7,7 @@ import { DECK_COUNT, JOKERS_PER_DECK, PLAYER_COUNT, SHOE_SIZE } from '../src/eng
 import { buildRun, buildSet, describeMeld, kickOptions, applyKick } from '../src/engine/melds.ts'
 import { createGame, reduce } from '../src/engine/reduce.ts'
 import { findOpenings } from '../src/engine/openings.ts'
-import { roundSpec } from '../src/engine/rounds.ts'
+import { ROUNDS, openingSize, roundSpec } from '../src/engine/rounds.ts'
 
 const okRun = (specs: string, deck = 0) => {
   const built = buildRun({ kind: 'run', cards: hand(specs, deck) }, 'p0', 'm1', 0)
@@ -336,5 +336,26 @@ describe('melds have minimum sizes, not fixed ones', () => {
     )
     // All six Jacks go down together rather than three being left stranded in hand.
     expect(jacks!.cards).toHaveLength(6)
+  })
+})
+
+describe('the shape of the seven rounds', () => {
+  it('grows the opening by exactly one card each round: 6, 7, 8, 9, 10, 11, 12', () => {
+    expect(ROUNDS.map(openingSize)).toEqual([6, 7, 8, 9, 10, 11, 12])
+  })
+
+  it('deals nine cards for the first three rounds and twelve from the fourth', () => {
+    expect(ROUNDS.map((spec) => spec.cardsDealt)).toEqual([9, 9, 9, 12, 12, 12, 12])
+  })
+
+  it('always leaves you room to hold cards back, except in round 7', () => {
+    // You are dealt more than the opening needs, right up until the final round,
+    // where the opening is the whole hand and laying it down is going out.
+    for (const spec of ROUNDS) {
+      const slack = spec.cardsDealt - openingSize(spec)
+      expect(slack).toBeGreaterThanOrEqual(0)
+      if (spec.round === 7) expect(slack).toBe(0)
+      else expect(slack).toBeGreaterThan(0)
+    }
   })
 })

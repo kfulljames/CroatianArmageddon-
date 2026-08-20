@@ -17,12 +17,25 @@ import type { GameState } from '../engine/state.ts'
 import { playerById, topDiscard } from '../engine/state.ts'
 import { type Difficulty, chooseAction } from '../ai/bot.ts'
 import { cardWouldHelp } from '../ai/evaluate.ts'
-import { loadSaved, save, clearSaved, loadSettings, saveSettings } from './persist.ts'
+import type { SortMode } from './handOrder.ts'
+import {
+  clearSaved,
+  loadHandOrder,
+  loadSaved,
+  loadSettings,
+  save,
+  saveHandOrder,
+  saveSettings,
+} from './persist.ts'
 
 export const HUMAN_ID = 'you'
 
 export interface Settings {
   readonly playerName: string
+  /** How your hand is arranged on screen. Yours to change at any point. */
+  readonly handSort: SortMode
+  /** Whether the Ace sorts above the King or below the 2. */
+  readonly aceHigh: boolean
   readonly difficulty: Difficulty
   /**
    * When off, the app only interrupts for an out-of-turn claim if the card actually
@@ -34,6 +47,8 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   playerName: 'You',
+  handSort: 'suit',
+  aceHigh: false,
   difficulty: 'normal',
   alwaysAsk: false,
   botSpeed: 550,
@@ -52,6 +67,8 @@ interface Store {
   selectedCardId: string | null
   /** Set when the player has asked to open and is choosing between lay-downs. */
   openingPickerOpen: boolean
+  /** Card ids in the order the player last arranged them by hand. */
+  handOrder: string[]
   lastError: string | null
 
   newGame: () => void
@@ -61,6 +78,9 @@ interface Store {
   updateSettings: (patch: Partial<Settings>) => void
   selectCard: (cardId: string | null) => void
   setOpeningPicker: (open: boolean) => void
+  /** Adopt an arrangement the player made by dragging, which makes the hand custom. */
+  arrangeHand: (orderedCardIds: string[]) => void
+  setHandSort: (mode: SortMode) => void
   dispatch: (action: Action) => void
 }
 
@@ -154,6 +174,7 @@ export const useStore = create<Store>((set, get) => {
     screen: 'home',
     selectedCardId: null,
     openingPickerOpen: false,
+    handOrder: loadHandOrder(),
     lastError: null,
 
     newGame: () => {
@@ -164,7 +185,15 @@ export const useStore = create<Store>((set, get) => {
         ...BOT_NAMES.map((name, index) => ({ id: `bot${index}`, name, isHuman: false })),
       ]
       const game = createGame({ seed: Math.floor(Math.random() * 0xffffffff), players })
-      set({ game, screen: 'table', selectedCardId: null, lastError: null, openingPickerOpen: false })
+      saveHandOrder([])
+      set({
+        game,
+        screen: 'table',
+        selectedCardId: null,
+        lastError: null,
+        openingPickerOpen: false,
+        handOrder: [],
+      })
       save(game)
       pump()
     },
@@ -195,6 +224,19 @@ export const useStore = create<Store>((set, get) => {
     selectCard: (cardId) => set({ selectedCardId: cardId }),
 
     setOpeningPicker: (open) => set({ openingPickerOpen: open }),
+
+    arrangeHand: (orderedCardIds) => {
+      saveHandOrder(orderedCardIds)
+      const settings = { ...get().settings, handSort: 'custom' as SortMode }
+      saveSettings(settings)
+      set({ handOrder: orderedCardIds, settings })
+    },
+
+    setHandSort: (mode) => {
+      const settings = { ...get().settings, handSort: mode }
+      saveSettings(settings)
+      set({ settings })
+    },
 
     dispatch: (action) => {
       const state = get().game

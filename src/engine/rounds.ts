@@ -38,6 +38,18 @@ export const MIN_RUN_SIZE = 4
 /** Length of the round-7 alternative: one full suit, low Ace through high Ace. */
 export const FULL_SUIT_RUN_LENGTH = 14
 
+/**
+ * How many cards the round's opening puts on the table.
+ *
+ * This is the spine of the whole game, and it is easy to miss from the list of
+ * requirements alone: the opening grows by exactly one card every round. Six, seven,
+ * eight, nine, ten, eleven, twelve. The combination changes shape each time — sets
+ * give way to runs — but the size only ever ticks up by one.
+ */
+export function openingSize(spec: RoundSpec): number {
+  return spec.sets * MIN_SET_SIZE + spec.runs * MIN_RUN_SIZE
+}
+
 export function roundSpec(round: number): RoundSpec {
   const spec = ROUNDS[round - 1]
   if (!spec) throw new Error(`No such round: ${round}`)
