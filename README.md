@@ -1,4 +1,6 @@
-# Croatian Armageddon
+<p align="center">
+  <img src="public/title.webp" alt="Croatian Armageddon" width="460">
+</p>
 
 A card game invented by **Dese**, and played at her table for twenty years.
 This is the app.

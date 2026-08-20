@@ -15,6 +15,17 @@ import { execFileSync } from 'node:child_process'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 
 const SOURCE = 'assets/source/emblem.png'
+const TITLE_SOURCE = 'assets/source/title.png'
+
+/**
+ * The title banner, cropped and sized for the home screen.
+ *
+ * The crop is centred on the composition and stops well short of the right edge,
+ * which excludes the generator's sparkle mark. 900px is twice the app's container
+ * width, so it stays sharp on a phone without paying for pixels nobody sees.
+ */
+const TITLE_CROP = { left: 275, top: 0, width: 850, height: 768 }
+const TITLE_WIDTH = 900
 
 /**
  * Where the medallion sits, measured rather than eyeballed. It is very slightly
@@ -135,6 +146,14 @@ async function main() {
   for (const name of ['splash.png', 'splash-dark.png']) {
     await sharp(splash).png(PNG).toFile(`assets/${name}`)
   }
+
+  // The title banner. WebP because it is the first thing downloaded and the same
+  // image costs 121KB here against 389KB as a PNG.
+  await sharp(TITLE_SOURCE)
+    .extract(TITLE_CROP)
+    .resize(TITLE_WIDTH)
+    .webp({ quality: 82, effort: 6 })
+    .toFile('public/title.webp')
 
   // The web build's favicon, which is also what a home-screen shortcut picks up.
   for (const size of [32, 180, 192, 512]) {

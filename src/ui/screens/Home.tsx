@@ -8,33 +8,53 @@ export function Home() {
   const [savedGame] = useState(hasSaved)
 
   return (
-    <div className="flex h-full flex-col items-center justify-between px-6 py-10">
-      <div className="flex flex-1 flex-col items-center justify-center text-center">
-        <h1 className="text-4xl font-black leading-tight tracking-tight text-white">
-          Croatian
+    <div className="flex h-full flex-col">
+      {/*
+        The banner runs to the edges and sits flush with the top, so its only visible
+        boundary is the bottom one — which is faded into the felt rather than cut, so
+        the artwork settles onto the table instead of being pasted over it.
+      */}
+      <img
+        src="title.webp"
+        alt="Croatian Armageddon"
+        className="w-full shrink-0 select-none"
+        style={{
+          maskImage: 'linear-gradient(to bottom, black 74%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, black 74%, transparent 100%)',
+        }}
+      />
+
+      <div className="-mt-4 flex flex-1 flex-col px-6 pb-8">
+        {/* The tagline belongs to the artwork, so it stays tucked under it. */}
+        <p className="text-center text-sm text-white/55">
+          Seven rounds. Lowest score wins.
+        </p>
+
+        {/* The buttons take the room that is left, centred, rather than being
+            stranded at a fixed distance from either end. */}
+        <div className="flex flex-1 items-center justify-center">
+          <div className="w-full max-w-xs space-y-2.5">
+            {savedGame && (
+              <MenuButton variant="accent" onClick={() => resumeSaved()}>
+                Resume game
+              </MenuButton>
+            )}
+            <MenuButton
+              variant={savedGame ? 'plain' : 'accent'}
+              onClick={() => setScreen('setup')}
+            >
+              New game
+            </MenuButton>
+            <MenuButton onClick={() => setScreen('rules')}>How to play</MenuButton>
+          </div>
+        </div>
+
+        <p className="text-center text-[11px] leading-relaxed text-white/35">
+          A card game created by <span className="text-white/60">Dese</span>,
           <br />
-          <span className="text-accent">Armageddon</span>
-        </h1>
-        <p className="mt-3 text-sm text-white/50">Seven rounds. Lowest score wins.</p>
+          with help from Karl.
+        </p>
       </div>
-
-      <div className="w-full max-w-xs space-y-2.5">
-        {savedGame && (
-          <MenuButton variant="accent" onClick={() => resumeSaved()}>
-            Resume game
-          </MenuButton>
-        )}
-        <MenuButton variant={savedGame ? 'plain' : 'accent'} onClick={() => setScreen('setup')}>
-          New game
-        </MenuButton>
-        <MenuButton onClick={() => setScreen('rules')}>How to play</MenuButton>
-      </div>
-
-      <p className="mt-8 text-center text-[11px] leading-relaxed text-white/35">
-        A card game created by <span className="text-white/60">Dese</span>,
-        <br />
-        with help from Karl.
-      </p>
     </div>
   )
 }
