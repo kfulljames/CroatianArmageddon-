@@ -33,4 +33,27 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /*
+   * The hand normally shrinks its overlap to fit every card without scrolling, but
+   * a run of claims and penalties can still grow it past what even a sliver-thin
+   * overlap fits on screen. When that happens there needs to be some visible sign
+   * that more cards are sitting off to the side, rather than a silent, scrollbar-free
+   * cutoff — this is a thin themed bar rather than the browser default, so it reads
+   * as part of the table instead of a stray OS control.
+   */
+  .hand-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(233, 239, 233, 0.3) transparent;
+  }
+  .hand-scrollbar::-webkit-scrollbar {
+    height: 5px;
+  }
+  .hand-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .hand-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(233, 239, 233, 0.3);
+    border-radius: 999px;
+  }
 }

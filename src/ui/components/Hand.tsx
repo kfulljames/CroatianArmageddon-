@@ -50,6 +50,7 @@ export function Hand({ cards, layout, selectedCardId, onSelect, onArrange }: Han
   const frameRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(0)
+  const [scrollLeft, setScrollLeft] = useState(0)
   const [drag, setDrag] = useState<DragState | null>(null)
   /**
    * Both picking a card and rearranging it resolve on pointer-up, not on click.
@@ -67,6 +68,9 @@ export function Hand({ cards, layout, selectedCardId, onSelect, onArrange }: Han
     if (!element) return
     const observer = new ResizeObserver(([entry]) => {
       if (entry) setWidth(entry.contentRect.width)
+      // The browser clamps scrollLeft on its own when the content shrinks — a card
+      // played while scrolled to the end, say — so this is where that's noticed.
+      setScrollLeft(element.scrollLeft)
     })
     observer.observe(element)
     setWidth(element.clientWidth)
@@ -74,6 +78,13 @@ export function Hand({ cards, layout, selectedCardId, onSelect, onArrange }: Han
   }, [])
 
   const ordered = useMemo(() => orderHand(cards, layout), [cards, layout])
+
+  // A card played while scrolled near the end can shrink the hand enough that the
+  // browser clamps scrollLeft on its own; re-read it so the edge fades stay honest.
+  useLayoutEffect(() => {
+    const element = frameRef.current
+    if (element) setScrollLeft(element.scrollLeft)
+  }, [ordered.length])
 
   let step = CARD_WIDTH
   if (width > 0 && ordered.length > 1) {
@@ -94,6 +105,16 @@ export function Hand({ cards, layout, selectedCardId, onSelect, onArrange }: Han
   }, [ordered, drag])
 
   const totalWidth = ordered.length > 0 ? CARD_WIDTH + (ordered.length - 1) * step : 0
+
+  /**
+   * Even at the tightest overlap, a big enough hand still runs past the edge of the
+   * screen — claims and penalties can push it well past what round seven deals. When
+   * that happens there needs to be some sign that more cards are sitting off to the
+   * side, rather than a silent cutoff: a fade at whichever edge still has cards
+   * beyond it, on top of the scrollbar itself.
+   */
+  const canScrollRight = totalWidth > width && scrollLeft < totalWidth - width - 1
+  const canScrollLeft = scrollLeft > 1
 
   const indexFromPointer = (clientX: number): number => {
     const track = trackRef.current
@@ -139,7 +160,23 @@ export function Hand({ cards, layout, selectedCardId, onSelect, onArrange }: Han
   }
 
   return (
-    <div ref={frameRef} className="w-full overflow-x-auto no-scrollbar px-3">
+    <div
+      ref={frameRef}
+      className="relative w-full overflow-x-auto hand-scrollbar px-3"
+      onScroll={(event) => setScrollLeft(event.currentTarget.scrollLeft)}
+    >
+      {/*
+        Above every card's own z-index, not just the highest one in use today — cards
+        later in a fanned hand sit on top of earlier ones by design (z-index tracks
+        slot position), so with enough cards the rightmost few would otherwise paint
+        straight over a fade meant to sit above them.
+      */}
+      {canScrollLeft && (
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-[999] w-8 bg-gradient-to-r from-black/70 to-transparent" />
+      )}
+      {canScrollRight && (
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-[999] w-8 bg-gradient-to-l from-black/70 to-transparent" />
+      )}
       <div
         ref={trackRef}
         className="relative mx-auto h-[86px]"
