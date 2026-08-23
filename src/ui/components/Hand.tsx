@@ -73,7 +73,14 @@ export function Hand({ cards, layout, selectedCardId, onSelect, onArrange }: Han
       setScrollLeft(element.scrollLeft)
     })
     observer.observe(element)
-    setWidth(element.clientWidth)
+    // Seeded the same way the observer reports it from then on — clientWidth
+    // includes the frame's own left/right padding, contentRect.width does not, and
+    // the two were mismatched by exactly that padding until a real resize fired and
+    // silently corrected it. That gap fed straight into canScrollRight/Left, so an
+    // overflow-free hand could flash a scrollbar and an edge fade for cards that
+    // were never actually cut off.
+    const style = getComputedStyle(element)
+    setWidth(element.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight))
     return () => observer.disconnect()
   }, [])
 
