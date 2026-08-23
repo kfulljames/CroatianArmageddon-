@@ -1,123 +1,161 @@
 # The next four sprints
 
-Two weeks each, give or take. Each one ends with something you can show someone.
+Two weeks each, give or take. Written for someone who can already code and who has
+played Croatian Armageddon for years — that second half is the rarer qualification and
+it decides the order below.
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) first — it covers how the project is put
-together and the rules of the road.
+[CONTRIBUTING.md](CONTRIBUTING.md) covers the layout and the rules of the road.
+[DEVELOPMENT.md](DEVELOPMENT.md) has the engineering detail and the honest list of what
+is broken. Reorder any of this if something else grabs you; the sequence is a
+recommendation, not a schedule.
 
----
-
-## Sprint 1 — Land in the code, ship something you can hear
-
-**Goal:** the game running on your own phone, with your fingerprints on it.
-
-1. Get it running: `npm install`, then `npm run dev -- --host`. Open the address it
-   prints on your phone. Play a full seven rounds. Write down every moment you were
-   confused — that list is worth more than it looks, and you only get to make it once.
-2. Build the real Android app: `npm run build && npx cap sync && npx cap open android`,
-   then Run in Android Studio with your phone plugged in. Now it's an app on your home
-   screen.
-3. Read `src/engine/state.ts` and then `src/engine/reduce.ts`. That's the whole
-   architecture. Skip everything else for now.
-4. **Build it:** sound and haptics. New file `src/ui/sound.ts`. A card-deal sound, a
-   card-place sound, a small buzz when it's your turn — Web Audio API for the sounds,
-   `navigator.vibrate` for the buzz. Add an on/off toggle to `Settings` in
-   `src/ui/store.ts` and make sure it survives closing the app.
-
-**Done when:** the app is on your phone, it makes noise, and the toggle still says what
-you left it saying after a restart.
-
-**Why this first:** it's self-contained, it can't break the rules, and it teaches you
-where everything lives without anyone lecturing you.
+The one standing rule: `npm test` and `npm run simulate` both pass before anything gets
+pushed.
 
 ---
 
-## Sprint 2 — Make the Hard bots actually hard
+## Sprint 1 — Rules fidelity
 
-**Goal:** fix the biggest known flaw in the project.
+**Goal:** the app plays the game as it is actually played, not as it was inferred from
+a written ruleset.
 
-Right now Hard and Normal are statistically the same. We measured it. That's a real
-open problem, it's yours, and it lives entirely in `src/ai/` — where you cannot break
-the game, because the engine refuses illegal moves no matter what the bot asks for.
+This is first because you are the only person who can do it, and because everything
+downstream is built on top of it. Bot heuristics tuned against slightly wrong rules are
+wasted work.
 
-1. `npm run compare -- --games 300` is your scoreboard. It rotates each difficulty
-   through every seat, because seat position alone is worth real points and will lie to
-   you otherwise. Read `src/sim/compare.ts` first — it explains why.
-2. **The rule of this sprint: no change lands without a measured win.** Run the
-   comparison before, make the change, run it after. If the number didn't move, revert
-   it. This is the actual skill being learned here, and most people never learn it.
-3. Ideas worth trying, roughly easiest first:
-   - Track which ranks are dead — if all four 7s are visible, stop holding for one.
-   - Don't discard a card an opponent has already claimed the twin of.
-   - Hold Jokers longer in rounds 1–3, dump them fast in round 7.
-   - Get the claim-penalty maths right: is two cards for that one card worth it?
-4. Write what you found into `DEVELOPMENT.md`, including the things that *didn't* work.
-   That section is the honest record and it should stay honest.
+The written rules left gaps that software cannot skip past — what happens when the draw
+pile empties, whether two runs in one suit are legal, what a Joker in a run *is*. Those
+gaps were resolved in conversation and are recorded as nine numbered **Rulings** in
+[RULES.md](RULES.md). Each has a named test in `tests/rulings.test.ts`. They are my best
+reading of the game. Some of them are probably wrong.
 
-**Done when:** Hard beats Normal by a margin that holds up across rotated seats, and
-the number is written down.
+1. Play it on a real device, all seven rounds. `npm run dev -- --host`, or build the
+   Android app — both work. Note anything that felt off, including things you can't
+   immediately justify; "that isn't how it goes" is a valid bug report here and has
+   already found two real ones.
+2. Read the nine Rulings against your own experience. Ruling 2 (same-suit runs) and
+   Ruling 5 (Joker identity in a run) are the two I'd least trust. Ruling 3 has already
+   been corrected twice from the table.
+3. `npm run fixture -- --r7` writes a saved game where the human can go out in round
+   seven, so you can inspect the rarest moment in the game without waiting for it.
+4. Fix what's wrong. A Ruling change means: update `RULES.md`, update the in-app rules
+   screen in `src/ui/screens/Rules.tsx`, change the engine, and change the named test so
+   it now asserts the correct behaviour. All four, or they drift.
 
----
+**Done when:** you have read all nine Rulings against the real game and either corrected
+them or signed off on them, and `DEVELOPMENT.md` no longer says nobody who knows the
+game has played it.
 
-## Sprint 3 — Make it playable by someone who's never played
-
-**Goal:** the app teaches the game.
-
-Right now the app assumes you already know Croatian Armageddon. Nobody outside the
-family does. This is the difference between a family app and a real one.
-
-1. **Hint mode.** `src/engine/openings.ts` already works out every way a hand could
-   open. Use it to show "you're two cards from opening" — and which two. Toggleable,
-   off by default.
-2. **Say why not.** When you tap a card and nothing lights up, the app currently says
-   nothing. `legalMoves(state)` in `src/engine/actions.ts` knows exactly why. Surface
-   it: "you have to open before you can add to anything."
-3. **A guided first round.** Not a wall of text — a few pointers on the real table
-   during round one: this is the draw pile, you need six cards down, your hand only
-   shrinks when you add to a meld.
-4. Test it on an actual human who has never played. Watch, don't help. Where they
-   hesitate is the bug.
-
-**Done when:** someone who has never played finishes round one without asking a
-question.
+**Worth knowing:** the engine is a pure reducer with `legalMoves(state)` beside it, and
+both the UI and the bots go through it. So a rules fix lands in one place and cannot be
+half-applied — there is no second copy of the rules to forget.
 
 ---
 
-## Sprint 4 — Put it in the Play Store
+## Sprint 2 — Make the Hard bots hard
+
+**Goal:** close the gap between Hard and Normal, using knowledge I don't have.
+
+The current numbers, rotating each level through every seat because moving first is
+worth real points and a fixed seating flatters whoever sits in the good chair:
+
+```
+Hard    245.7 avg    25% wins
+Normal  251.2 avg    25% wins
+Easy    — genuinely much weaker
+```
+
+Hard is Normal with extra steps. It's effectively a two-level game right now.
+
+The honest diagnosis: every heuristic in `src/ai/` is my inference of how this game is
+played, from reading the rules. You have twenty years of actual play. That is the
+asset — the interesting question is less "what search do we run" than "what does a good
+player do with a Joker in round three," and you can answer that directly.
+
+1. `npm run compare -- --games 300` is the scoreboard. Read `src/sim/compare.ts` first;
+   it explains the seat rotation and why a single seating is worthless as a measurement.
+2. **No change lands without a measured win.** Measure, change, measure. If the number
+   didn't move, revert it — I threw away two changes I was certain about. Log the
+   negative results in `DEVELOPMENT.md`; that section is the honest record.
+3. `src/ai/bot.ts` is the decision points (claim, draw, play, discard); `src/ai/evaluate.ts`
+   is hand valuation and distance-to-open. The difficulty levels are knobs on one bot,
+   not three bots.
+4. You cannot break the game from in here. The engine refuses illegal moves regardless
+   of what the bot asks for, so the worst case is a bot that plays badly.
+
+Open questions I'd genuinely like your read on: is the claim-penalty maths right — when
+is two cards for one actually worth it? Should a bot hold a Joker it could play? Does a
+good player discard by point value or by what it feeds the table?
+
+**Done when:** Hard beats Normal by a margin that survives seat rotation, and the number
+is written down.
+
+---
+
+## Sprint 3 — Round seven
+
+**Goal:** the hardest problem in the project.
+
+Round seven go-outs run at about 93%. A real player manages it every time.
+
+It is not a detection failure — the engine never misses a go-out when one exists,
+verified across 19,184 hands. The bots simply don't build the right hand. And round
+seven is a different game from the other six: you may only open if it empties your hand
+completely, in one movement, with no discard. So there is no kicking, no partial
+progress, no incremental shedding. It is pure construction toward a single legal
+terminal state, twelve or thirteen cards across three runs, and every draw either helps
+or doesn't.
+
+That makes it the one place in this project where heuristics are arguably the wrong
+tool and a real search would pay. `src/engine/openings.ts` already resolves abstract
+shapes against concrete cards and returns every legal way a hand could open; the
+question is what to *hold* thirty turns before that becomes possible.
+
+`src/ai/evaluate.ts` has a special case for the final round already — it was capping
+progress at twelve cards for a thirteen-card problem, which is fixed, but the metric
+underneath it is still crude.
+
+**Done when:** round seven go-outs are meaningfully above 93%, measured over a few
+thousand games, without regressing rounds one through six.
+
+**Fair warning:** this may not be reachable with heuristics at all, and "we tried search
+and here is what it cost" is a perfectly good outcome to write up.
+
+---
+
+## Sprint 4 — Ship it
 
 **Goal:** a stranger can install it.
 
-1. Generate a signing keystore. **Back it up somewhere permanent** — lose it and the
-   app can never be updated again, ever. This is the one irreversible step in the whole
-   project.
-2. Wire the keystore up. `android/app/build.gradle` has a `release` build type but no
-   `signingConfig`, so `./gradlew bundleRelease` on its own emits an *unsigned* bundle
-   that the Play Console will reject. Easiest route is Android Studio's
-   **Build → Generate Signed App Bundle**, which writes the config for you; keep the
-   keystore password out of the repo.
-3. Store listing: screenshots from a real device, a feature graphic, a description, and
-   a privacy policy. Ours is short and true: the app collects nothing and never talks to
-   a server.
-4. Google Play Console → internal testing track first. Get it onto five phones that
-   aren't yours and let it sit for a week.
-5. Then production.
+1. **Make it survivable by someone who has never played.** Minimum bar: when you tap a
+   card and nothing lights up, say why. `legalMoves(state)` in `src/engine/actions.ts`
+   already knows — it's a surfacing problem, not a logic one. Everything beyond that
+   (hint mode, a guided first round) is optional and can wait for real feedback.
+2. **Signing.** Generate a keystore and back it up somewhere permanent — lose it and the
+   listing can never be updated again. `android/app/build.gradle` has a `release` build
+   type but no `signingConfig`, so `./gradlew bundleRelease` alone emits an unsigned
+   bundle the Play Console will reject. Android Studio's **Build → Generate Signed App
+   Bundle** writes that config; keep the password out of the repo.
+3. **Store listing.** Screenshots from a real device, feature graphic, description,
+   privacy policy. Ours is short and true: it collects nothing and never contacts a
+   server.
+4. **Internal testing track first.** Five phones that aren't yours, one week, then
+   production.
 
-**Done when:** it's on the Play Store and someone you've never met has installed it.
+iOS is the same story and the `ios/` project is already built and waiting, but it needs
+a Mac and a paid Apple account, so it's a separate conversation.
 
-iOS is the same story but needs a Mac and a paid Apple account, so it's a separate
-conversation — the `ios/` project is already built and waiting either way.
+**Done when:** it's on the Play Store and someone neither of us knows has installed it.
 
 ---
 
-## After that, if you want more
+## Standing problems, if you'd rather pick your own
 
-- **Online multiplayer.** The engine was deliberately built so this is possible: it's a
-  pure function, so a server can run the exact same one. It needs a backend and it's a
-  real project — six weeks, not two. But it's the natural next thing and the groundwork
-  is already laid.
-- **Accessibility.** Almost none of the UI is screen-reader usable right now. It's
-  unglamorous, and it's the kind of work that separates people who ship from people who
-  demo.
-- **An undo button.** Harder than it sounds and a genuinely interesting problem: the
-  state is immutable, so it's within reach, but you have to decide what a bot's turn
-  undoes to.
+- **Online multiplayer.** The engine was built so this is possible — it's a pure
+  function, so a server runs the identical one, and the client can't cheat because it
+  never owned the rules. Needs a backend. Six weeks, not two, and the most interesting
+  thing on this list.
+- **Accessibility.** Effectively none. Almost nothing in `src/ui/` is screen-reader
+  usable.
+- **Undo.** The state is immutable so it's within reach, but the design question is real:
+  what does undo mean when three bots have moved since?
