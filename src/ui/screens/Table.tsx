@@ -43,6 +43,7 @@ export function Table({ state }: { state: GameState }) {
   const moves = legalMoves(state)
   const yourTurn = moves.playerId === HUMAN_ID && state.phase !== 'claim'
   const discard = topDiscard(state)
+  const askingAboutClaim = Boolean(discard) && shouldAskAboutClaim(state)
 
   const selectedCard = you.hand.find((card) => card.id === selectedCardId) ?? null
 
@@ -155,29 +156,38 @@ export function Table({ state }: { state: GameState }) {
         )}
       </div>
 
-      <div className="flex items-center justify-center gap-6 border-t border-white/10 px-3 py-2">
-        <PileColumn
-          label={`Draw (${state.drawPile.length})`}
-          hint={state.drawPileKnown ? 'flipped' : undefined}
-        >
-          {state.drawPile.length > 0 ? <CardBack size="md" /> : <CardSlot size="md">empty</CardSlot>}
-          {yourTurn && state.phase === 'draw' && moves.canDrawFromPile && (
-            <PileButton onClick={() => dispatch({ type: 'drawFromPile' })}>Draw</PileButton>
-          )}
-        </PileColumn>
+      {/*
+        Neither pile button can be pressed during a claim decision — drawing and
+        taking are both gated on phase 'draw' — and the discard card is the very one
+        the prompt below is already showing. So the whole row steps aside while it's
+        up, which also hands its height back to the melds above, which is the thing
+        you actually need to see to decide.
+      */}
+      {!askingAboutClaim && (
+        <div className="flex items-center justify-center gap-6 border-t border-white/10 px-3 py-2">
+          <PileColumn
+            label={`Draw (${state.drawPile.length})`}
+            hint={state.drawPileKnown ? 'flipped' : undefined}
+          >
+            {state.drawPile.length > 0 ? <CardBack size="md" /> : <CardSlot size="md">empty</CardSlot>}
+            {yourTurn && state.phase === 'draw' && moves.canDrawFromPile && (
+              <PileButton onClick={() => dispatch({ type: 'drawFromPile' })}>Draw</PileButton>
+            )}
+          </PileColumn>
 
-        <PileColumn
-          label="Discard"
-          hint={
-            discard && !moves.canTakeDiscard && state.phase === 'draw' ? 'claimed away' : undefined
-          }
-        >
-          {discard ? <CardFace card={discard} size="md" /> : <CardSlot size="md">empty</CardSlot>}
-          {yourTurn && state.phase === 'draw' && moves.canTakeDiscard && (
-            <PileButton onClick={() => dispatch({ type: 'takeDiscard' })}>Take</PileButton>
-          )}
-        </PileColumn>
-      </div>
+          <PileColumn
+            label="Discard"
+            hint={
+              discard && !moves.canTakeDiscard && state.phase === 'draw' ? 'claimed away' : undefined
+            }
+          >
+            {discard ? <CardFace card={discard} size="md" /> : <CardSlot size="md">empty</CardSlot>}
+            {yourTurn && state.phase === 'draw' && moves.canTakeDiscard && (
+              <PileButton onClick={() => dispatch({ type: 'takeDiscard' })}>Take</PileButton>
+            )}
+          </PileColumn>
+        </div>
+      )}
 
       <div className="border-t border-white/10 bg-black/25">
         {/*
@@ -185,7 +195,7 @@ export function Table({ state }: { state: GameState }) {
           is not your turn, so it gets said plainly and held on screen, rather than
           scrolling past in the log at ten pixels tall.
         */}
-        {discard && shouldAskAboutClaim(state) && (
+        {askingAboutClaim && discard && (
           <ClaimPrompt
             card={discard}
             costsPenalty={moves.claimCostsPenalty}
