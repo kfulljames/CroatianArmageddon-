@@ -95,7 +95,9 @@ to be played to hand, and a laptop browser will lie to you about whether the car
 readable.
 
 For the engineering — how the rules are modelled, what the simulator found, and how to
-build for the stores — see [DEVELOPMENT.md](DEVELOPMENT.md).
+build for the stores — see [DEVELOPMENT.md](DEVELOPMENT.md). If you want to work on it,
+[CONTRIBUTING.md](CONTRIBUTING.md) is where to start and [SPRINTS.md](SPRINTS.md) is
+what needs doing.
 
 ---
 

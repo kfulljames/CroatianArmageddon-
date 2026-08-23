@@ -104,3 +104,5 @@ needs.
 Online multiplayer with friends on their own phones. The engine was built so it could
 be added without rewriting the rules, but it needs a backend and is out of scope for
 this version.
+
+The planned work, and who it is for, is in [SPRINTS.md](SPRINTS.md).
