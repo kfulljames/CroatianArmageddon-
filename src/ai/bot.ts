@@ -42,7 +42,7 @@ export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
 
 /** Would this card slot straight onto something already on the table? */
 function isKickableNow(state: GameState, card: Card): boolean {
-  return state.melds.some((meld) => kickOptions(meld, card, state.turnCounter).length > 0)
+  return state.melds.some((meld) => kickOptions(meld, card, state.turnCounter, state.melds).length > 0)
 }
 
 /**
@@ -71,7 +71,7 @@ function kickPotential(state: GameState, card: Card): number {
 function feedsAnOpponent(state: GameState, card: Card, selfId: string): boolean {
   return state.melds.some(
     (meld) =>
-      meld.ownerId !== selfId && kickOptions(meld, card, state.turnCounter).length > 0,
+      meld.ownerId !== selfId && kickOptions(meld, card, state.turnCounter, state.melds).length > 0,
   )
 }
 

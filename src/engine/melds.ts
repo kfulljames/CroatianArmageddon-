@@ -248,14 +248,24 @@ export interface KickOption {
 /**
  * Where, if anywhere, this card could be kicked onto this meld.
  *
- * Ruling 3 is applied here: a meld laid down on the current turn is closed. That is
- * the written 5♠ bridging rule generalised — you cannot lay two runs with a gap and
- * immediately bridge them in the same breath.
+ * Ruling 3 lives here, and it is narrow. Melds laid this turn are *not* closed —
+ * you may put a card, a Joker especially, straight onto something you have just laid
+ * down. The single thing barred on the turn a run is laid is bridging it into another
+ * run of the same suit laid alongside it, because that would quietly turn two runs
+ * into one and leave you a meld short of the requirement. The written rules call out
+ * exactly that case: the 5♠ may go onto A-2-3-4♠ and 6-7-8-9♠ "after they are played
+ * down, however not on the same turn in which they were played".
+ *
+ * `tableMelds` is only consulted for that check; pass the melds currently in play.
  */
-export function kickOptions(meld: Meld, card: Card, currentTurn: number): KickOption[] {
-  if (meld.laidOnTurn >= currentTurn) return []
-
+export function kickOptions(
+  meld: Meld,
+  card: Card,
+  currentTurn: number,
+  tableMelds: readonly Meld[] = [],
+): KickOption[] {
   if (meld.kind === 'set') {
+    // A set cannot bridge into anything, so it is open the moment it is laid.
     const matches = card.isJoker || card.rank === meld.rank
     return matches ? [{ meldId: meld.id, position: 'end' }] : []
   }
@@ -269,7 +279,22 @@ export function kickOptions(meld: Meld, card: Card, currentTurn: number): KickOp
   if (highSlot <= SLOT_MAX && cardFitsSlot(card, meld.suit, highSlot)) {
     options.push({ meldId: meld.id, position: 'end', slot: highSlot })
   }
-  return options
+
+  if (meld.laidOnTurn < currentTurn) return options
+
+  // Laid this turn: drop any option that would join it to a run of the same suit
+  // laid on the same turn.
+  return options.filter((option) => {
+    const start = option.position === 'start' ? meld.startSlot - 1 : meld.startSlot
+    const end = option.position === 'end' ? runEndSlot(meld) + 1 : runEndSlot(meld)
+    return !tableMelds.some((other) => {
+      if (other.id === meld.id || other.kind !== 'run') return false
+      if (other.suit !== meld.suit) return false
+      if (other.laidOnTurn < currentTurn) return false
+      const otherEnd = runEndSlot(other)
+      return end + 1 === other.startSlot || otherEnd + 1 === start
+    })
+  })
 }
 
 /** Apply a kick, returning the new meld. Assumes the option came from `kickOptions`. */

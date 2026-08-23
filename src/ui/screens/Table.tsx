@@ -90,7 +90,12 @@ export function Table({ state }: { state: GameState }) {
 
       <Opponents state={state} humanId={HUMAN_ID} highlightId={notice?.playerId ?? null} />
 
-      <div className="flex flex-1 flex-col gap-1.5 overflow-y-auto px-3 pb-2">
+      {/*
+        `min-h-0` is what makes this scroll. A flex child defaults to a minimum size of
+        its content, so without it the melds area simply grows past the bottom of the
+        screen and takes the piles and your hand with it, instead of scrolling.
+      */}
+      <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-3 pb-2">
         {state.melds.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-1 text-center">
             <p className="text-xs text-white/35">Nothing has been laid down yet.</p>
@@ -156,6 +161,15 @@ export function Table({ state }: { state: GameState }) {
           is not your turn, so it gets said plainly and held on screen, rather than
           scrolling past in the log at ten pixels tall.
         */}
+        {discard && shouldAskAboutClaim(state) && (
+          <ClaimPrompt
+            card={discard}
+            costsPenalty={moves.claimCostsPenalty}
+            connects={cardConnects(state, HUMAN_ID, discard)}
+            onRespond={(want) => dispatch({ type: 'claimResponse', want })}
+          />
+        )}
+
         {notice ? (
           <div className="px-3 pt-2">
             <p className="rounded-md border border-accent/40 bg-accent/10 px-2.5 py-1.5 text-center text-xs font-medium text-accent-soft">
@@ -230,14 +244,6 @@ export function Table({ state }: { state: GameState }) {
         />
       )}
 
-      {discard && shouldAskAboutClaim(state) && (
-        <ClaimPrompt
-          card={discard}
-          costsPenalty={moves.claimCostsPenalty}
-          connects={cardConnects(state, HUMAN_ID, discard)}
-          onRespond={(want) => dispatch({ type: 'claimResponse', want })}
-        />
-      )}
     </div>
   )
 }
@@ -262,9 +268,14 @@ function TurnHint({
   if (state.phase === 'claim') {
     const decidingId = state.claim?.order[state.claim.index]
     const deciding = state.players.find((player) => player.id === decidingId)
-    text = deciding
-      ? `${deciding.name} is deciding whether to take the discard…`
-      : 'Someone is deciding whether to take the discard…'
+    // When it is the player's own call the prompt is right there, so point at it
+    // rather than narrating — and "You is deciding" would be wrong anyway.
+    text =
+      decidingId === HUMAN_ID
+        ? 'Take the discard, or pass.'
+        : deciding
+          ? `${deciding.name} is deciding whether to take the discard…`
+          : 'Someone is deciding whether to take the discard…'
   } else if (!yourTurn) {
     text = `${state.players[state.turnIndex]?.name ?? 'Someone'} is playing…`
   } else if (state.phase === 'draw') {

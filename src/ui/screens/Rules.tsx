@@ -104,8 +104,9 @@ export function Rules() {
             played, and will be stuck in your hand at the end.
           </p>
           <Note>
-            You may open and kick on the same turn, but not onto the melds you just laid —
-            those are closed until your next turn.
+            You may open and kick on the same turn, including onto what you have just laid
+            down. The one exception: on the turn two runs of a suit go down with a gap
+            between them, the card that would bridge them has to wait until your next turn.
           </Note>
         </Section>
 

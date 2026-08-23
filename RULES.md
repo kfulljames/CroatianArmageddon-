@@ -136,8 +136,12 @@ Decisions taken where the written rules left a gap. Each has a named test in
    5-6-7-8♠ are illegal, being one run in disguise. A one-card gap is legal, and so
    is an overlap using duplicate cards from two decks. The restriction applies only
    when laying down — kicking the bridge card on later is allowed.
-3. **You may open and kick on the same turn**, but not onto the melds you just laid.
-   Those are closed until your next turn.
+3. **You may open and kick on the same turn**, including onto the melds you have just
+   laid down — a Joker can go straight onto your own set. The one thing barred on the
+   turn a run is laid is the card that would *bridge* it into another run of the same
+   suit laid alongside it, because that would quietly turn two runs into one and leave
+   you a meld short of the requirement. That card can be kicked on any later turn, as
+   the written rules say.
 4. **In rounds 1–6 the last card must leave as a discard.** You must keep one card
    back; the app will not let you kick your hand down to nothing.
 5. **A Joker in a run is pinned to its slot.** See above.

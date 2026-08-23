@@ -97,24 +97,46 @@ describe('Ruling 2 — same-suit runs may gap or overlap, but never run sequenti
   })
 })
 
-describe('Ruling 3 — melds laid this turn are closed until the next turn', () => {
-  it('refuses a kick onto a meld laid down on the current turn', () => {
-    const meld = run('AS 2S 3S 4S')
-    const laidThisTurn = { ...meld, laidOnTurn: 5 }
-    expect(kickOptions(laidThisTurn, c('5S'), 5)).toHaveLength(0)
+describe('Ruling 3 — melds stay open the turn they are laid, except for bridging', () => {
+  it('lets you put a Joker straight onto a set you have just laid down', () => {
+    const built = buildSet({ kind: 'set', cards: hand('4H 4C 4S') }, 'p0', 'm1', 5)
+    if (!built.ok) throw new Error(built.reason)
+    // Laid on turn 5, and it is still turn 5.
+    expect(kickOptions(built.meld, c('JK'), 5, [built.meld])).toHaveLength(1)
+    expect(kickOptions(built.meld, c('4D'), 5, [built.meld])).toHaveLength(1)
   })
 
-  it('allows the same kick once the turn has moved on', () => {
-    const meld = run('AS 2S 3S 4S')
-    const laidEarlier = { ...meld, laidOnTurn: 4 }
-    expect(kickOptions(laidEarlier, c('5S'), 5)).toHaveLength(1)
+  it('lets you extend a run you have just laid down', () => {
+    const meld = { ...run('AS 2S 3S 4S'), laidOnTurn: 5 }
+    expect(kickOptions(meld, c('5S'), 5, [meld])).toHaveLength(1)
+  })
+
+  it('refuses the one card that would bridge two runs laid on the same turn', () => {
+    // A-2-3-4♠ and 6-7-8-9♠ laid together. The 5♠ would make them one run.
+    const low = { ...run('AS 2S 3S 4S'), id: 'm1', laidOnTurn: 5 }
+    const high = { ...run('6S 7S 8S 9S'), id: 'm2', laidOnTurn: 5 }
+    const table = [low, high]
+    expect(kickOptions(low, c('5S'), 5, table)).toHaveLength(0)
+    expect(kickOptions(high, c('5S'), 5, table)).toHaveLength(0)
+    // Everything else about those runs is still open.
+    expect(kickOptions(high, c('TS'), 5, table)).toHaveLength(1)
+  })
+
+  it('allows that same bridging card once the turn has moved on', () => {
+    const low = { ...run('AS 2S 3S 4S'), id: 'm1', laidOnTurn: 5 }
+    const high = { ...run('6S 7S 8S 9S'), id: 'm2', laidOnTurn: 5 }
+    expect(kickOptions(low, c('5S'), 6, [low, high])).toHaveLength(1)
+  })
+
+  it('does not treat runs of different suits as bridging', () => {
+    const spades = { ...run('AS 2S 3S 4S'), id: 'm1', laidOnTurn: 5 }
+    const hearts = { ...run('6H 7H 8H 9H'), id: 'm2', laidOnTurn: 5 }
+    expect(kickOptions(spades, c('5S'), 5, [spades, hearts])).toHaveLength(1)
   })
 
   it('still allows kicking onto melds that were already on the table', () => {
-    const meld = run('AS 2S 3S 4S')
-    const older = { ...meld, laidOnTurn: 1 }
-    // Opening on turn 5 does not close melds laid by anyone on earlier turns.
-    expect(kickOptions(older, c('5S'), 5)).toHaveLength(1)
+    const older = { ...run('AS 2S 3S 4S'), laidOnTurn: 1 }
+    expect(kickOptions(older, c('5S'), 5, [older])).toHaveLength(1)
   })
 })
 

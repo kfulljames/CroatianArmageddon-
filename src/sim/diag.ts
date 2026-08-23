@@ -1,78 +1,57 @@
-/** How often does the human actually get asked about a discard? */
+/** Can a player put a Joker onto a meld they laid down themselves? */
 import { createGame, reduce } from '../engine/reduce.ts'
 import { legalMoves } from '../engine/actions.ts'
-import { chooseAction } from '../ai/bot.ts'
-import { topDiscard, playerById } from '../engine/state.ts'
-import { kickOptions } from '../engine/melds.ts'
-import { roundSpec } from '../engine/rounds.ts'
-import { cardWouldHelp } from '../ai/evaluate.ts'
-import type { GameState } from '../engine/state.ts'
-import type { Card } from '../engine/cards.ts'
+import type { Card, Rank, Suit } from '../engine/cards.ts'
 
-const HUMAN = 'p0'
+const S: Record<string, Suit> = { C:'clubs', D:'diamonds', H:'hearts', S:'spades' }
+const R: Record<string, Rank> = { A:1,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,T:10,J:11,Q:12,K:13 }
+const c = (spec: string, deck = 0): Card =>
+  spec.startsWith('JK')
+    ? { id:`d${deck}-JK${spec.slice(2)||'0'}`, suit:null, rank:null, isJoker:true }
+    : { id:`d${deck}-${spec.slice(-1)}${R[spec.slice(0,-1)]}`, suit:S[spec.slice(-1)]!, rank:R[spec.slice(0,-1)]!, isJoker:false }
+const hand = (s: string, d = 0) => s.trim().split(/\s+/).map(x => c(x, d))
 
-// Mirrors cardConnects() in the UI store.
-function connects(state: GameState, card: Card): boolean {
-  const player = playerById(state, HUMAN)
-  if (card.isJoker) return true
-  if (player.hasOpened) {
-    return state.melds.some((m) => kickOptions(m, card, state.turnCounter).length > 0)
-  }
-  return cardWouldHelp(player.hand, card, roundSpec(state.round))
+let state = createGame({
+  seed: 5,
+  players: Array.from({ length: 4 }, (_, i) => ({ id:`p${i}`, name:`P${i}`, isHuman: i===0 })),
+})
+const seat = state.turnIndex
+const me = state.players[seat]!.id
+
+// Round 1: two three of a kinds, plus a Joker and a spare.
+const myHand = [...hand('4H 4C 4S 9D 9H 9C'), c('JK0'), ...c('KS') ? [c('KS')] : []]
+state = {
+  ...state,
+  round: 1,
+  phase: 'play',
+  players: state.players.map((p, i) => (i === seat ? { ...p, hand: myHand } : p)),
 }
 
-let discards = 0
-let humanInOrder = 0      // human was somewhere in the claim queue
-let humanReached = 0      // the queue actually got to the human
-let askedFree = 0
-let askedPenalty = 0
-let autoDeclined = 0
-let botsClaimed = 0
+state = reduce(state, {
+  type: 'open',
+  proposals: [
+    { kind: 'set', cards: hand('4H 4C 4S') },
+    { kind: 'set', cards: hand('9D 9H 9C') },
+  ],
+})
+console.log('opened. my melds:', state.melds.filter(m => m.ownerId === me).length)
+console.log('hand now:', state.players[seat]!.hand.map(x => x.isJoker ? 'JK' : `${x.rank}`).join(' '))
 
-for (let seed = 1; seed <= 12; seed++) {
-  let state = createGame({
-    seed,
-    players: Array.from({ length: 4 }, (_, i) => ({ id: `p${i}`, name: `P${i}`, isHuman: i === 0 })),
-  })
-  let lastPhase = state.phase
+const sameTurn = legalMoves(state).kicks
+console.log('SAME turn — kicks offered onto my own lays:', sameTurn.length)
 
-  for (let i = 0; i < 60000 && state.phase !== 'gameEnd'; i++) {
-    // Entering a claim window
-    if (lastPhase !== 'claim' && state.phase === 'claim') {
-      discards++
-      if (state.claim!.order.includes(HUMAN)) humanInOrder++
-    }
-    if (state.phase === 'claim') {
-      const moves = legalMoves(state)
-      if (moves.claimPlayerId === HUMAN) {
-        humanReached++
-        const card = topDiscard(state)
-        if (!moves.claimCostsPenalty) askedFree++
-        else if (card && connects(state, card)) askedPenalty++
-        else autoDeclined++
-      }
-    }
-    lastPhase = state.phase
-    const before = state
-    // The human passes on everything, so we measure opportunity, not outcome.
-    const action =
-      state.phase === 'claim' && legalMoves(state).claimPlayerId === HUMAN
-        ? ({ type: 'claimResponse', want: false } as const)
-        : chooseAction(state, 'normal')
-    if (state.phase === 'claim' && legalMoves(state).claimPlayerId !== HUMAN) {
-      const a = chooseAction(state, 'normal')
-      if (a.type === 'claimResponse' && a.want) botsClaimed++
-    }
-    state = reduce(state, action)
-    if (state === before) break
-  }
+// Now move to the next turn and try again.
+let next = state
+next = reduce(next, { type: 'discard', cardId: c('KS').id })
+let guard = 0
+while (next.phase !== 'draw' && guard++ < 20) next = reduce(next, { type: 'claimResponse', want: false })
+while (next.players[next.turnIndex]!.id !== me && guard++ < 200) {
+  const { chooseAction } = await import('../ai/bot.ts')
+  next = reduce(next, chooseAction(next, 'normal'))
 }
-
-const pct = (n: number) => `${((n / discards) * 100).toFixed(0)}%`
-console.log(`discards:                 ${discards}`)
-console.log(`human somewhere in queue: ${humanInOrder} (${pct(humanInOrder)})`)
-console.log(`queue reached the human:  ${humanReached} (${pct(humanReached)})`)
-console.log(`  asked, free:            ${askedFree} (${pct(askedFree)} of all discards)`)
-console.log(`  asked, penalty+connects:${askedPenalty} (${pct(askedPenalty)})`)
-console.log(`  SILENTLY auto-declined: ${autoDeclined} (${pct(autoDeclined)})`)
-console.log(`bot claims taken:         ${botsClaimed} (${pct(botsClaimed)})`)
+if (next.phase === 'draw') next = reduce(next, { type: 'drawFromPile' })
+const laterTurn = legalMoves(next).kicks.filter(k => {
+  const card = next.players[next.turnIndex]!.hand.find(x => x.id === k.cardId)
+  return card?.isJoker
+})
+console.log('LATER turn — Joker kicks offered:', laterTurn.length)

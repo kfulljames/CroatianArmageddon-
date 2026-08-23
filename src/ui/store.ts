@@ -91,7 +91,7 @@ export function cardConnects(state: GameState, playerId: string, card: Card): bo
   const player = playerById(state, playerId)
   if (card.isJoker) return true
   if (player.hasOpened) {
-    return state.melds.some((meld) => kickOptions(meld, card, state.turnCounter).length > 0)
+    return state.melds.some((meld) => kickOptions(meld, card, state.turnCounter, state.melds).length > 0)
   }
   return cardWouldHelp(player.hand, card, roundSpec(state.round))
 }
