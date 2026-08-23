@@ -78,6 +78,21 @@ is bot skill, not detection.
 **Nobody who knows the game has played it yet.** Both corrections that came back from
 the table found real bugs that no amount of simulation surfaced on its own.
 
+**`npm install` reports 12 vulnerabilities (6 moderate, 4 high, 2 critical).** All of
+them are in build tooling, not in anything shipped to a player's phone: `sharp` (only
+touched by `npm run icons`), and `tar`/`uuid`/`xcode`/`@trapezedev/project` pulled in
+by `@capacitor/cli` and `@capacitor/assets` (only run when you type `npx cap ...`
+yourself, against this project's own files). `vite`/`esbuild`/`vitest` are the closest
+to everyday exposure — their flagged issues need either the dev server open to an
+untrusted network while you're also browsing untrusted sites, or `vitest --ui`, which
+this project never runs. None of these packages are imported by `src/`; confirm with
+`grep -rn "from 'sharp'\|from 'tar'\|from 'uuid'" src/` if in doubt.
+
+Fixes exist for the `@capacitor/cli` chain (→ 8.4.2) and the `vitest` chain (→ 4.1.11),
+both semver-major, so `npm audit fix` won't take them automatically. The rest have no
+fix published yet. Worth a deliberate branch — bump, `npx cap sync`, a real device
+build, `npm test` — rather than folding into an unrelated change.
+
 ## Building for the stores
 
 ```bash
