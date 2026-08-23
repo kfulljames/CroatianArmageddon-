@@ -65,27 +65,6 @@ export function Setup() {
           </p>
         </Field>
 
-        <Field label="Asking about the discard">
-          <button
-            type="button"
-            onClick={() => updateSettings({ alwaysAsk: !settings.alwaysAsk })}
-            className="flex w-full items-center justify-between rounded-lg border border-white/15 bg-white/5 px-3 py-2.5 text-left active:scale-[0.99]"
-          >
-            <span className="text-sm text-white">Ask me every time</span>
-            <span
-              className={`h-6 w-11 rounded-full p-0.5 transition-colors ${settings.alwaysAsk ? 'bg-accent' : 'bg-white/20'}`}
-            >
-              <span
-                className={`block h-5 w-5 rounded-full bg-white transition-transform ${settings.alwaysAsk ? 'translate-x-5' : ''}`}
-              />
-            </span>
-          </button>
-          <p className="mt-1.5 text-[11px] leading-snug text-white/40">
-            {settings.alwaysAsk
-              ? 'You will be asked about every card that hits the discard pile.'
-              : 'You will only be interrupted for an out-of-turn claim when the card actually connects with your hand. Free claims always ask.'}
-          </p>
-        </Field>
       </div>
 
       <div className="border-t border-white/10 p-4">

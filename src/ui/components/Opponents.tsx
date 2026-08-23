@@ -11,9 +11,11 @@ import type { GameState, PlayerState } from '../../engine/state.ts'
 export interface OpponentsProps {
   state: GameState
   humanId: string
+  /** Flash whoever just took the discard, so the card can be followed across the table. */
+  highlightId?: string | null
 }
 
-export function Opponents({ state, humanId }: OpponentsProps) {
+export function Opponents({ state, humanId, highlightId = null }: OpponentsProps) {
   const others = state.players.filter((player) => player.id !== humanId)
   const activeId = state.players[state.turnIndex]?.id
   const claimingId =
@@ -27,6 +29,7 @@ export function Opponents({ state, humanId }: OpponentsProps) {
           player={player}
           isActive={player.id === activeId}
           isClaiming={player.id === claimingId}
+          isHighlighted={player.id === highlightId}
         />
       ))}
     </div>
@@ -37,10 +40,12 @@ function OpponentChip({
   player,
   isActive,
   isClaiming,
+  isHighlighted,
 }: {
   player: PlayerState
   isActive: boolean
   isClaiming: boolean
+  isHighlighted: boolean
 }) {
   const nearlyOut = player.hand.length <= 2
 
@@ -48,7 +53,11 @@ function OpponentChip({
     <div
       className={[
         'min-w-[76px] flex-1 rounded-lg border px-2 py-1.5 transition-colors',
-        isActive ? 'border-accent bg-accent/10' : 'border-white/10 bg-white/[0.03]',
+        isHighlighted
+          ? 'border-accent-soft bg-accent/25'
+          : isActive
+            ? 'border-accent bg-accent/10'
+            : 'border-white/10 bg-white/[0.03]',
       ].join(' ')}
     >
       <div className="flex items-center gap-1">

@@ -18,7 +18,7 @@ const canClick = async (name) =>
 await page.addInitScript(() => {
   window.localStorage.setItem(
     'croatian-armageddon:settings:v1',
-    JSON.stringify({ playerName: 'You', opponents: 3, difficulty: 'normal', alwaysAsk: false, botSpeed: 25 }),
+    JSON.stringify({ playerName: 'You', difficulty: 'normal', botSpeed: 25 }),
   )
 })
 

@@ -31,6 +31,7 @@ export function Table({ state }: { state: GameState }) {
   const openingPickerOpen = useStore((store) => store.openingPickerOpen)
   const setOpeningPicker = useStore((store) => store.setOpeningPicker)
   const lastError = useStore((store) => store.lastError)
+  const notice = useStore((store) => store.notice)
   const settings = useStore((store) => store.settings)
   const handOrder = useStore((store) => store.handOrder)
   const arrangeHand = useStore((store) => store.arrangeHand)
@@ -87,7 +88,7 @@ export function Table({ state }: { state: GameState }) {
         </div>
       </header>
 
-      <Opponents state={state} humanId={HUMAN_ID} />
+      <Opponents state={state} humanId={HUMAN_ID} highlightId={notice?.playerId ?? null} />
 
       <div className="flex flex-1 flex-col gap-1.5 overflow-y-auto px-3 pb-2">
         {state.melds.length === 0 ? (
@@ -150,13 +151,26 @@ export function Table({ state }: { state: GameState }) {
       </div>
 
       <div className="border-t border-white/10 bg-black/25">
-        <div className="px-3 pt-1.5 text-[10px] leading-tight text-white/40">
-          {recentLog.map((entry, index) => (
-            <div key={`${entry.turn}-${index}`} className="truncate">
-              {entry.text}
-            </div>
-          ))}
-        </div>
+        {/*
+          Somebody taking the discard is the one thing that happens *to* you while it
+          is not your turn, so it gets said plainly and held on screen, rather than
+          scrolling past in the log at ten pixels tall.
+        */}
+        {notice ? (
+          <div className="px-3 pt-2">
+            <p className="rounded-md border border-accent/40 bg-accent/10 px-2.5 py-1.5 text-center text-xs font-medium text-accent-soft">
+              {notice.text}
+            </p>
+          </div>
+        ) : (
+          <div className="px-3 pt-1.5 text-[11px] leading-tight text-white/45">
+            {recentLog.map((entry, index) => (
+              <div key={`${entry.turn}-${index}`} className="truncate">
+                {entry.text}
+              </div>
+            ))}
+          </div>
+        )}
 
         {lastError && (
           <div className="mx-3 mt-1 rounded bg-red-500/20 px-2 py-1 text-[11px] text-red-200">
@@ -216,7 +230,7 @@ export function Table({ state }: { state: GameState }) {
         />
       )}
 
-      {discard && shouldAskAboutClaim(state, settings) && (
+      {discard && shouldAskAboutClaim(state) && (
         <ClaimPrompt
           card={discard}
           costsPenalty={moves.claimCostsPenalty}
@@ -246,7 +260,11 @@ function TurnHint({
 }) {
   let text: string
   if (state.phase === 'claim') {
-    text = 'Someone is deciding whether to take the discard…'
+    const decidingId = state.claim?.order[state.claim.index]
+    const deciding = state.players.find((player) => player.id === decidingId)
+    text = deciding
+      ? `${deciding.name} is deciding whether to take the discard…`
+      : 'Someone is deciding whether to take the discard…'
   } else if (!yourTurn) {
     text = `${state.players[state.turnIndex]?.name ?? 'Someone'} is playing…`
   } else if (state.phase === 'draw') {
