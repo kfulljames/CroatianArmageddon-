@@ -348,7 +348,7 @@ function validateOpening(
       }
       used.add(card.id)
     }
-    const built = buildMeld(proposal, player.id, `m${state.nextMeldSeq + index}`, state.turnCounter)
+    const built = buildMeld(proposal, player.id, `m${state.nextMeldSeq + index}`)
     if (!built.ok) throw new IllegalMoveError(built.reason)
     melds.push(built.meld)
   })

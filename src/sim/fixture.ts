@@ -37,13 +37,11 @@ const wholeSuit = buildRun(
   { kind: 'run', cards: [...hand('AS 2S 3S 4S 5S 6S 7S 8S 9S TS JS QS KS'), c('AS', 1)], startSlot: 1 },
   'bot0',
   'm1',
-  1,
 )
 const everyJack = buildSet(
   { kind: 'set', cards: [...hand('JH JC JS JD', 0), ...hand('JH JC JS JD', 1), c('JK0')] },
   'you',
   'm2',
-  1,
 )
 if (!wholeSuit.ok) throw new Error(wholeSuit.reason)
 if (!everyJack.ok) throw new Error(everyJack.reason)

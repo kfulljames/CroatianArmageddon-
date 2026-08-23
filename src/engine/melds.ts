@@ -1,11 +1,12 @@
 /**
  * Melds: three-of-a-kinds and runs, plus everything that can legally be done to them.
  *
- * This module owns three of the rulings that resolve gaps in the written rules:
+ * Two of the rulings that resolve gaps in the written rules live here:
  *
- *   Ruling 2 — two runs in the same suit are illegal only if *sequential*. A one-card
- *              gap or an overlap built from duplicate cards is fine.
- *   Ruling 3 — a meld laid down this turn cannot be kicked onto until the next turn.
+ *   Ruling 2 — two runs in the same suit may not be laid *sequentially*, since that
+ *              is one run wearing a disguise and would leave you a meld short. A gap
+ *              or an overlap built from duplicate cards is fine, and once down the
+ *              two runs stay separate lays for good — they never combine.
  *   Ruling 5 — a Joker in a run is pinned to its slot (4-5-6-Joker♠ is the 7♠ and
  *              nothing else). A Joker in a set is bought by any card of that rank.
  */
@@ -34,8 +35,6 @@ export interface SetMeld {
   /** The rank every card in the set stands for. */
   readonly rank: Rank
   readonly cards: readonly Card[]
-  /** Global turn counter at the moment this meld hit the table (Ruling 3). */
-  readonly laidOnTurn: number
 }
 
 export interface RunMeld {
@@ -46,7 +45,6 @@ export interface RunMeld {
   /** Slot occupied by `cards[0]`; `cards[i]` occupies `startSlot + i`. */
   readonly startSlot: SlotRank
   readonly cards: readonly Card[]
-  readonly laidOnTurn: number
 }
 
 export type Meld = SetMeld | RunMeld
@@ -90,7 +88,6 @@ export function buildSet(
   proposal: SetProposal,
   ownerId: PlayerId,
   id: MeldId,
-  laidOnTurn: number,
 ): MeldResult<SetMeld> {
   const { cards } = proposal
   if (cards.length < MIN_SET_SIZE) {
@@ -116,7 +113,7 @@ export function buildSet(
     }
   }
 
-  return { ok: true, meld: { id, kind: 'set', ownerId, rank, cards: cards.slice(), laidOnTurn } }
+  return { ok: true, meld: { id, kind: 'set', ownerId, rank, cards: cards.slice() } }
 }
 
 /**
@@ -165,7 +162,6 @@ export function buildRun(
   proposal: RunProposal,
   ownerId: PlayerId,
   id: MeldId,
-  laidOnTurn: number,
 ): MeldResult<RunMeld> {
   const { cards } = proposal
   if (cards.length < MIN_RUN_SIZE) {
@@ -195,7 +191,6 @@ export function buildRun(
       suit: layout.suit,
       startSlot: layout.startSlot,
       cards: cards.slice(),
-      laidOnTurn,
     },
   }
 }
@@ -204,11 +199,10 @@ export function buildMeld(
   proposal: MeldProposal,
   ownerId: PlayerId,
   id: MeldId,
-  laidOnTurn: number,
 ): MeldResult<Meld> {
   return proposal.kind === 'set'
-    ? buildSet(proposal, ownerId, id, laidOnTurn)
-    : buildRun(proposal, ownerId, id, laidOnTurn)
+    ? buildSet(proposal, ownerId, id)
+    : buildRun(proposal, ownerId, id)
 }
 
 /**
@@ -248,24 +242,17 @@ export interface KickOption {
 /**
  * Where, if anywhere, this card could be kicked onto this meld.
  *
- * Ruling 3 lives here, and it is narrow. Melds laid this turn are *not* closed —
- * you may put a card, a Joker especially, straight onto something you have just laid
- * down. The single thing barred on the turn a run is laid is bridging it into another
- * run of the same suit laid alongside it, because that would quietly turn two runs
- * into one and leave you a meld short of the requirement. The written rules call out
- * exactly that case: the 5♠ may go onto A-2-3-4♠ and 6-7-8-9♠ "after they are played
- * down, however not on the same turn in which they were played".
+ * Pure geometry: a set takes any card of its rank, a run grows at either end. There
+ * is no timing rule here at all. Once a meld is down it can be added to, including on
+ * the turn it was laid and including by the player who laid it.
  *
- * `tableMelds` is only consulted for that check; pass the melds currently in play.
+ * Two runs of a suit laid with a gap stay two separate melds for good — they never
+ * combine — so the card that sits in the gap is not a problem to be prevented. Lay
+ * 2-3-4-5♠ and 7-8-9-10♠ and the 6♠ can go onto either of them, or a Joker can, with
+ * no issue. The runs simply remain two lays, which is what the round required.
  */
-export function kickOptions(
-  meld: Meld,
-  card: Card,
-  currentTurn: number,
-  tableMelds: readonly Meld[] = [],
-): KickOption[] {
+export function kickOptions(meld: Meld, card: Card): KickOption[] {
   if (meld.kind === 'set') {
-    // A set cannot bridge into anything, so it is open the moment it is laid.
     const matches = card.isJoker || card.rank === meld.rank
     return matches ? [{ meldId: meld.id, position: 'end' }] : []
   }
@@ -279,22 +266,9 @@ export function kickOptions(
   if (highSlot <= SLOT_MAX && cardFitsSlot(card, meld.suit, highSlot)) {
     options.push({ meldId: meld.id, position: 'end', slot: highSlot })
   }
-
-  if (meld.laidOnTurn < currentTurn) return options
-
-  // Laid this turn: drop any option that would join it to a run of the same suit
-  // laid on the same turn.
-  return options.filter((option) => {
-    const start = option.position === 'start' ? meld.startSlot - 1 : meld.startSlot
-    const end = option.position === 'end' ? runEndSlot(meld) + 1 : runEndSlot(meld)
-    return !tableMelds.some((other) => {
-      if (other.id === meld.id || other.kind !== 'run') return false
-      if (other.suit !== meld.suit) return false
-      if (other.laidOnTurn < currentTurn) return false
-      const otherEnd = runEndSlot(other)
-      return end + 1 === other.startSlot || otherEnd + 1 === start
-    })
-  })
+  // A run cannot wrap: the slot scale simply ends at the high Ace, so nothing follows
+  // it and nothing precedes the low Ace.
+  return options
 }
 
 /** Apply a kick, returning the new meld. Assumes the option came from `kickOptions`. */

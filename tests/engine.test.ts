@@ -10,7 +10,7 @@ import { findOpenings } from '../src/engine/openings.ts'
 import { ROUNDS, openingSize, roundSpec } from '../src/engine/rounds.ts'
 
 const okRun = (specs: string, deck = 0) => {
-  const built = buildRun({ kind: 'run', cards: hand(specs, deck) }, 'p0', 'm1', 0)
+  const built = buildRun({ kind: 'run', cards: hand(specs, deck) }, 'p0', 'm1')
   if (!built.ok) throw new Error(built.reason)
   return built.meld
 }
@@ -74,17 +74,17 @@ describe('runs', () => {
   })
 
   it('refuses to wrap around from King through Ace to 2', () => {
-    const built = buildRun({ kind: 'run', cards: hand('QS KS AS 2S') }, 'p0', 'm1', 0)
+    const built = buildRun({ kind: 'run', cards: hand('QS KS AS 2S') }, 'p0', 'm1')
     expect(built.ok).toBe(false)
   })
 
   it('refuses a run shorter than four', () => {
-    const built = buildRun({ kind: 'run', cards: hand('2S 3S 4S') }, 'p0', 'm1', 0)
+    const built = buildRun({ kind: 'run', cards: hand('2S 3S 4S') }, 'p0', 'm1')
     expect(built.ok).toBe(false)
   })
 
   it('refuses a run of mixed suits', () => {
-    const built = buildRun({ kind: 'run', cards: hand('2S 3S 4H 5S') }, 'p0', 'm1', 0)
+    const built = buildRun({ kind: 'run', cards: hand('2S 3S 4H 5S') }, 'p0', 'm1')
     expect(built.ok).toBe(false)
   })
 
@@ -93,7 +93,6 @@ describe('runs', () => {
       { kind: 'run', cards: [c('JK0'), c('JK1'), c('JK2'), c('JK0', 1)] },
       'p0',
       'm1',
-      0,
     )
     expect(built.ok).toBe(false)
   })
@@ -106,7 +105,7 @@ describe('runs', () => {
 
 describe('sets', () => {
   it('accepts three of a rank', () => {
-    const built = buildSet({ kind: 'set', cards: hand('4H 4C 4S') }, 'p0', 'm1', 0)
+    const built = buildSet({ kind: 'set', cards: hand('4H 4C 4S') }, 'p0', 'm1')
     expect(built.ok).toBe(true)
   })
 
@@ -115,23 +114,22 @@ describe('sets', () => {
       { kind: 'set', cards: [c('4H', 0), c('4H', 1), c('4C', 0)] },
       'p0',
       'm1',
-      0,
     )
     expect(built.ok).toBe(true)
   })
 
   it('refuses mixed ranks', () => {
-    const built = buildSet({ kind: 'set', cards: hand('4H 4C 5S') }, 'p0', 'm1', 0)
+    const built = buildSet({ kind: 'set', cards: hand('4H 4C 5S') }, 'p0', 'm1')
     expect(built.ok).toBe(false)
   })
 
   it('refuses fewer than three cards', () => {
-    const built = buildSet({ kind: 'set', cards: hand('4H 4C') }, 'p0', 'm1', 0)
+    const built = buildSet({ kind: 'set', cards: hand('4H 4C') }, 'p0', 'm1')
     expect(built.ok).toBe(false)
   })
 
   it('requires an all-Joker set to declare its rank', () => {
-    const built = buildSet({ kind: 'set', cards: [c('JK0'), c('JK1'), c('JK2')] }, 'p0', 'm1', 0)
+    const built = buildSet({ kind: 'set', cards: [c('JK0'), c('JK1'), c('JK2')] }, 'p0', 'm1')
     expect(built.ok).toBe(false)
   })
 })
@@ -139,35 +137,35 @@ describe('sets', () => {
 describe('kicking', () => {
   it('extends a run at either end', () => {
     const meld = okRun('4S 5S 6S 7S')
-    expect(kickOptions(meld, c('3S'), 5).map((option) => option.position)).toEqual(['start'])
-    expect(kickOptions(meld, c('8S'), 5).map((option) => option.position)).toEqual(['end'])
+    expect(kickOptions(meld, c('3S')).map((option) => option.position)).toEqual(['start'])
+    expect(kickOptions(meld, c('8S')).map((option) => option.position)).toEqual(['end'])
   })
 
   it('refuses a card that is not in the run direction', () => {
     const meld = okRun('4S 5S 6S 7S')
     // A second 5♠ cannot be inserted mid-run; runs only grow at the ends.
-    expect(kickOptions(meld, c('5S', 1), 5)).toHaveLength(0)
-    expect(kickOptions(meld, c('9S'), 5)).toHaveLength(0)
+    expect(kickOptions(meld, c('5S', 1))).toHaveLength(0)
+    expect(kickOptions(meld, c('9S'))).toHaveLength(0)
   })
 
   it('refuses a run card of the wrong suit', () => {
-    expect(kickOptions(okRun('4S 5S 6S 7S'), c('8H'), 5)).toHaveLength(0)
+    expect(kickOptions(okRun('4S 5S 6S 7S'), c('8H'))).toHaveLength(0)
   })
 
   it('stops a run at the high Ace', () => {
     const meld = okRun('TS JS QS KS')
     // The Ace caps it; nothing follows, because runs cannot wrap to the 2.
-    expect(kickOptions(meld, c('AS'), 5).map((option) => option.position)).toEqual(['end'])
+    expect(kickOptions(meld, c('AS')).map((option) => option.position)).toEqual(['end'])
     const capped = applyKick(meld, c('AS'), 'end')
-    expect(kickOptions(capped, c('2S'), 5)).toHaveLength(0)
+    expect(kickOptions(capped, c('2S'))).toHaveLength(0)
   })
 
   it('takes any card of the rank onto a set, including a Joker', () => {
-    const built = buildSet({ kind: 'set', cards: hand('4H 4C 4S') }, 'p0', 'm1', 0)
+    const built = buildSet({ kind: 'set', cards: hand('4H 4C 4S') }, 'p0', 'm1')
     if (!built.ok) throw new Error(built.reason)
-    expect(kickOptions(built.meld, c('4D'), 5)).toHaveLength(1)
-    expect(kickOptions(built.meld, c('JK'), 5)).toHaveLength(1)
-    expect(kickOptions(built.meld, c('5D'), 5)).toHaveLength(0)
+    expect(kickOptions(built.meld, c('4D'))).toHaveLength(1)
+    expect(kickOptions(built.meld, c('JK'))).toHaveLength(1)
+    expect(kickOptions(built.meld, c('5D'))).toHaveLength(0)
   })
 })
 
@@ -275,7 +273,7 @@ describe('melds have minimum sizes, not fixed ones', () => {
   it('takes every Jack in the shoe as one three of a kind', () => {
     // Two decks hold eight Jacks: four suits, twice over.
     const everyJack = [...hand('JH JC JS JD', 0), ...hand('JH JC JS JD', 1)]
-    const built = buildSet({ kind: 'set', cards: everyJack }, 'p0', 'm1', 0)
+    const built = buildSet({ kind: 'set', cards: everyJack }, 'p0', 'm1')
     expect(built.ok).toBe(true)
     if (built.ok) {
       expect(built.meld.cards).toHaveLength(8)
@@ -285,7 +283,7 @@ describe('melds have minimum sizes, not fixed ones', () => {
 
   it('takes a ninth Jack once a Joker stands in for one', () => {
     const nineJacks = [...hand('JH JC JS JD', 0), ...hand('JH JC JS JD', 1), c('JK0')]
-    const built = buildSet({ kind: 'set', cards: nineJacks }, 'p0', 'm1', 0)
+    const built = buildSet({ kind: 'set', cards: nineJacks }, 'p0', 'm1')
     expect(built.ok).toBe(true)
     if (built.ok) expect(built.meld.cards).toHaveLength(9)
   })
@@ -297,14 +295,14 @@ describe('melds have minimum sizes, not fixed ones', () => {
   })
 
   it('lays a long run as a single run', () => {
-    const built = buildRun({ kind: 'run', cards: hand('2S 3S 4S 5S 6S 7S 8S 9S TS') }, 'p0', 'm1', 0)
+    const built = buildRun({ kind: 'run', cards: hand('2S 3S 4S 5S 6S 7S 8S 9S TS') }, 'p0', 'm1')
     expect(built.ok).toBe(true)
     if (built.ok) expect(built.meld.cards).toHaveLength(9)
   })
 
   it('lays a whole suit, low Ace through high Ace, as one run of fourteen', () => {
     const wholeSuit = [...hand('AS 2S 3S 4S 5S 6S 7S 8S 9S TS JS QS KS'), c('AS', 1)]
-    const built = buildRun({ kind: 'run', cards: wholeSuit, startSlot: 1 }, 'p0', 'm1', 0)
+    const built = buildRun({ kind: 'run', cards: wholeSuit, startSlot: 1 }, 'p0', 'm1')
     expect(built.ok).toBe(true)
     if (built.ok) expect(built.meld.cards).toHaveLength(14)
   })
@@ -314,15 +312,14 @@ describe('melds have minimum sizes, not fixed ones', () => {
       { kind: 'set', cards: [...hand('JH JC JS JD', 0), ...hand('JH JC', 1)] },
       'p0',
       'm1',
-      0,
     )
     if (!bigSet.ok) throw new Error(bigSet.reason)
-    expect(kickOptions(bigSet.meld, c('JS', 1), 5)).toHaveLength(1)
-    expect(kickOptions(bigSet.meld, c('JK1'), 5)).toHaveLength(1)
+    expect(kickOptions(bigSet.meld, c('JS', 1))).toHaveLength(1)
+    expect(kickOptions(bigSet.meld, c('JK1'))).toHaveLength(1)
 
     const longRun = okRun('2S 3S 4S 5S 6S 7S 8S')
-    expect(kickOptions(longRun, c('9S'), 5).map((option) => option.position)).toEqual(['end'])
-    expect(kickOptions(longRun, c('AS'), 5).map((option) => option.position)).toEqual(['start'])
+    expect(kickOptions(longRun, c('9S')).map((option) => option.position)).toEqual(['end'])
+    expect(kickOptions(longRun, c('AS')).map((option) => option.position)).toEqual(['start'])
   })
 
   it('opens round 1 with an oversized set alongside a normal one', () => {

@@ -132,16 +132,15 @@ Decisions taken where the written rules left a gap. Each has a named test in
 1. **The draw pile is rebuilt, not reshuffled.** When it runs out, the top discard
    stays where it is and the rest of the pile is flipped over bodily. Order is
    preserved (inverted), so an attentive player knows what is coming.
-2. **Same-suit runs may gap or overlap, but never run sequentially.** A-2-3-4♠ and
-   5-6-7-8♠ are illegal, being one run in disguise. A one-card gap is legal, and so
-   is an overlap using duplicate cards from two decks. The restriction applies only
-   when laying down — kicking the bridge card on later is allowed.
-3. **You may open and kick on the same turn**, including onto the melds you have just
-   laid down — a Joker can go straight onto your own set. The one thing barred on the
-   turn a run is laid is the card that would *bridge* it into another run of the same
-   suit laid alongside it, because that would quietly turn two runs into one and leave
-   you a meld short of the requirement. That card can be kicked on any later turn, as
-   the written rules say.
+2. **Same-suit runs may gap or overlap, but never be laid sequentially.** A-2-3-4♠ and
+   5-6-7-8♠ are illegal, being one run in disguise and one meld short of what the
+   round asked for. A one-card gap is legal, and so is an overlap using duplicate
+   cards from two decks. The restriction is on *laying down* only: once two runs are
+   down they are two separate lays for good and never combine. Lay 2-3-4-5♠ and
+   7-8-9-10♠ and the 6♠ goes onto either of them, in either position, as can a Joker.
+3. **Once a meld is down it can be added to, immediately.** You may open and kick on
+   the same turn, including onto what you have just laid — a Joker goes straight onto
+   your own set. There is no waiting period on anything.
 4. **In rounds 1–6 the last card must leave as a discard.** You must keep one card
    back; the app will not let you kick your hand down to nothing.
 5. **A Joker in a run is pinned to its slot.** See above.

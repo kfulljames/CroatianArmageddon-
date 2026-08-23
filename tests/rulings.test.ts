@@ -10,9 +10,11 @@ import { describe, expect, it } from 'vitest'
 import { c, hand, newGame, withHand, withState } from './helpers.ts'
 import { cardPoints, handPoints } from '../src/engine/cards.ts'
 import {
+  applyKick,
   buildRun,
   buildSet,
   canStealJoker,
+  describeMeld,
   jokerSlots,
   kickOptions,
   runsAreSequential,
@@ -27,7 +29,6 @@ const run = (specs: string, deck = 0, startSlot?: number) => {
     { kind: 'run', cards: hand(specs, deck), ...(startSlot != null ? { startSlot } : {}) },
     'p0',
     'm1',
-    0,
   )
   if (!built.ok) throw new Error(built.reason)
   return built.meld
@@ -97,46 +98,48 @@ describe('Ruling 2 — same-suit runs may gap or overlap, but never run sequenti
   })
 })
 
-describe('Ruling 3 — melds stay open the turn they are laid, except for bridging', () => {
+describe('Ruling 3 — once a meld is down it can be added to, immediately', () => {
   it('lets you put a Joker straight onto a set you have just laid down', () => {
-    const built = buildSet({ kind: 'set', cards: hand('4H 4C 4S') }, 'p0', 'm1', 5)
+    const built = buildSet({ kind: 'set', cards: hand('4H 4C 4S') }, 'p0', 'm1')
     if (!built.ok) throw new Error(built.reason)
-    // Laid on turn 5, and it is still turn 5.
-    expect(kickOptions(built.meld, c('JK'), 5, [built.meld])).toHaveLength(1)
-    expect(kickOptions(built.meld, c('4D'), 5, [built.meld])).toHaveLength(1)
+    expect(kickOptions(built.meld, c('JK'))).toHaveLength(1)
+    expect(kickOptions(built.meld, c('4D'))).toHaveLength(1)
   })
 
   it('lets you extend a run you have just laid down', () => {
-    const meld = { ...run('AS 2S 3S 4S'), laidOnTurn: 5 }
-    expect(kickOptions(meld, c('5S'), 5, [meld])).toHaveLength(1)
+    expect(kickOptions(run('AS 2S 3S 4S'), c('5S'))).toHaveLength(1)
   })
 
-  it('refuses the one card that would bridge two runs laid on the same turn', () => {
-    // A-2-3-4♠ and 6-7-8-9♠ laid together. The 5♠ would make them one run.
-    const low = { ...run('AS 2S 3S 4S'), id: 'm1', laidOnTurn: 5 }
-    const high = { ...run('6S 7S 8S 9S'), id: 'm2', laidOnTurn: 5 }
-    const table = [low, high]
-    expect(kickOptions(low, c('5S'), 5, table)).toHaveLength(0)
-    expect(kickOptions(high, c('5S'), 5, table)).toHaveLength(0)
-    // Everything else about those runs is still open.
-    expect(kickOptions(high, c('TS'), 5, table)).toHaveLength(1)
+  it('takes the card that sits between two runs onto either of them', () => {
+    // Dese and Karl's example: 2-3-4-5♠ and 7-8-9-10♠ are down, and the 6♠ goes
+    // onto whichever you like. They stay two lays; the 6 does not join them up.
+    const low = { ...run('2S 3S 4S 5S'), id: 'm1' }
+    const high = { ...run('7S 8S 9S TS'), id: 'm2' }
+
+    expect(kickOptions(low, c('6S')).map((option) => option.position)).toEqual(['end'])
+    expect(kickOptions(high, c('6S')).map((option) => option.position)).toEqual(['start'])
+    // A Joker does the same job at either end of either run.
+    expect(kickOptions(low, c('JK')).map((option) => option.position)).toEqual(['start', 'end'])
+    expect(kickOptions(high, c('JK')).map((option) => option.position)).toEqual(['start', 'end'])
   })
 
-  it('allows that same bridging card once the turn has moved on', () => {
-    const low = { ...run('AS 2S 3S 4S'), id: 'm1', laidOnTurn: 5 }
-    const high = { ...run('6S 7S 8S 9S'), id: 'm2', laidOnTurn: 5 }
-    expect(kickOptions(low, c('5S'), 6, [low, high])).toHaveLength(1)
+  it('keeps them as two separate lays after the gap is filled', () => {
+    const low = { ...run('2S 3S 4S 5S'), id: 'm1' }
+    const grown = applyKick(low, c('6S'), 'end')
+    expect(grown.cards).toHaveLength(5)
+    // Still one meld that happens to run 2..6, sitting beside another that runs 7..10.
+    // Nothing merges: the round asked for two runs and two runs is what is on the table.
+    expect(grown.id).toBe('m1')
+    expect(describeMeld(grown)).toBe('2–6♠')
   })
 
-  it('does not treat runs of different suits as bridging', () => {
-    const spades = { ...run('AS 2S 3S 4S'), id: 'm1', laidOnTurn: 5 }
-    const hearts = { ...run('6H 7H 8H 9H'), id: 'm2', laidOnTurn: 5 }
-    expect(kickOptions(spades, c('5S'), 5, [spades, hearts])).toHaveLength(1)
+  it('still refuses to wrap a run past the high Ace', () => {
+    const toTheAce = applyKick(run('TS JS QS KS'), c('AS'), 'end')
+    expect(kickOptions(toTheAce, c('2S'))).toHaveLength(0)
   })
 
-  it('still allows kicking onto melds that were already on the table', () => {
-    const older = { ...run('AS 2S 3S 4S'), laidOnTurn: 1 }
-    expect(kickOptions(older, c('5S'), 5, [older])).toHaveLength(1)
+  it('still allows kicking onto melds laid on earlier turns', () => {
+    expect(kickOptions(run('AS 2S 3S 4S'), c('5S'))).toHaveLength(1)
   })
 })
 
@@ -144,7 +147,7 @@ describe('Ruling 4 — in rounds 1–6 the last card must leave as a discard', (
   it('does not offer a kick that would empty the hand', () => {
     const base = newGame()
     const seat = base.turnIndex
-    const meld = { ...run('AS 2S 3S 4S'), laidOnTurn: 0, ownerId: base.players[seat]!.id }
+    const meld = { ...run('AS 2S 3S 4S'), ownerId: base.players[seat]!.id }
     const state = withState(withHand(base, seat, hand('5S')), {
       phase: 'play',
       turnCounter: 5,
@@ -163,7 +166,7 @@ describe('Ruling 4 — in rounds 1–6 the last card must leave as a discard', (
   it('offers the kick as soon as a spare card is held back', () => {
     const base = newGame()
     const seat = base.turnIndex
-    const meld = { ...run('AS 2S 3S 4S'), laidOnTurn: 0, ownerId: base.players[seat]!.id }
+    const meld = { ...run('AS 2S 3S 4S'), ownerId: base.players[seat]!.id }
     const state = withState(base, {
       phase: 'play',
       turnCounter: 5,
@@ -216,7 +219,7 @@ describe('Ruling 5 — a Joker in a run is pinned to its slot', () => {
   })
 
   it('lets any card of the rank buy a Joker out of a three of a kind', () => {
-    const built = buildSet({ kind: 'set', cards: hand('4H 4C JK') }, 'p0', 'm1', 0)
+    const built = buildSet({ kind: 'set', cards: hand('4H 4C JK') }, 'p0', 'm1')
     if (!built.ok) throw new Error(built.reason)
     const meld = built.meld
     expect(canStealJoker(meld, 2, c('4D'))).toBe(true)
@@ -236,7 +239,7 @@ describe('Ruling 6 — stealing a Joker does not use up your turn', () => {
   it('leaves the hand the same size and keeps the player on turn', () => {
     const base = newGame()
     const seat = base.turnIndex
-    const meld = { ...run('4S 5S 6S JK'), laidOnTurn: 1, ownerId: 'p1' }
+    const meld = { ...run('4S 5S 6S JK'), ownerId: 'p1' }
     const state = withState(base, {
       phase: 'play',
       turnCounter: 5,
@@ -263,7 +266,7 @@ describe('Ruling 6 — stealing a Joker does not use up your turn', () => {
   it('is available to a player who has not opened', () => {
     const base = newGame()
     const seat = base.turnIndex
-    const meld = { ...run('4S 5S 6S JK'), laidOnTurn: 1, ownerId: 'p1' }
+    const meld = { ...run('4S 5S 6S JK'), ownerId: 'p1' }
     const state = withState(base, {
       phase: 'play',
       turnCounter: 5,

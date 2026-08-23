@@ -147,7 +147,7 @@ export function legalMoves(state: GameState): LegalMoves {
     if (mayKick) {
       for (const card of player.hand) {
         for (const meld of state.melds) {
-          for (const option of kickOptions(meld, card, state.turnCounter, state.melds)) {
+          for (const option of kickOptions(meld, card)) {
             kicks.push({
               cardId: card.id,
               meldId: option.meldId,

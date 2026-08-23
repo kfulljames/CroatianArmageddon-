@@ -105,8 +105,9 @@ export function Rules() {
           </p>
           <Note>
             You may open and kick on the same turn, including onto what you have just laid
-            down. The one exception: on the turn two runs of a suit go down with a gap
-            between them, the card that would bridge them has to wait until your next turn.
+            down. Two runs of a suit stay two separate lays for good — lay 2-3-4-5♠ and
+            7-8-9-10♠ and the 6♠ goes onto either of them, or a Joker does. They never
+            join up into one.
           </Note>
         </Section>
 
