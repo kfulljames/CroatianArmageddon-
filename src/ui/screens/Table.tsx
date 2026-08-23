@@ -105,29 +105,53 @@ export function Table({ state }: { state: GameState }) {
             </p>
           </div>
         ) : (
-          state.melds.map((meld) => {
-            const kicks = kicksForSelected.filter((kick) => kick.meldId === meld.id)
-            const steals = stealsForSelected.filter((steal) => steal.meldId === meld.id)
-            return (
-              <MeldView
-                key={meld.id}
-                meld={meld}
-                ownerName={playerById(state, meld.ownerId).name}
-                isYours={meld.ownerId === HUMAN_ID}
-                kickable={kicks.length > 0}
-                kickPositions={kicks.map((kick) => kick.position)}
-                stealableIndexes={steals.map((steal) => steal.index)}
-                onKick={(position) =>
-                  selectedCardId &&
-                  dispatch({ type: 'kick', cardId: selectedCardId, meldId: meld.id, position })
-                }
-                onSteal={(index) =>
-                  selectedCardId &&
-                  dispatch({ type: 'stealJoker', meldId: meld.id, index, cardId: selectedCardId })
-                }
-              />
-            )
-          })
+          // Grouped by owner, in seat order, so a player's melds read as one section
+          // rather than being scattered through the lay-down order.
+          state.players
+            .map((player) => ({ player, melds: state.melds.filter((meld) => meld.ownerId === player.id) }))
+            .filter((group) => group.melds.length > 0)
+            .map(({ player, melds }) => {
+              const isYours = player.id === HUMAN_ID
+              return (
+                <div
+                  key={player.id}
+                  className={[
+                    'rounded-lg border p-1.5',
+                    isYours ? 'border-accent/25 bg-white/[0.015]' : 'border-white/[0.06] bg-white/[0.01]',
+                  ].join(' ')}
+                >
+                  <span className="mb-1 block px-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/60">
+                    {isYours ? 'You' : player.name}
+                  </span>
+                  <div className="space-y-1.5">
+                    {melds.map((meld) => {
+                      const kicks = kicksForSelected.filter((kick) => kick.meldId === meld.id)
+                      const steals = stealsForSelected.filter((steal) => steal.meldId === meld.id)
+                      return (
+                        <MeldView
+                          key={meld.id}
+                          meld={meld}
+                          ownerName={player.name}
+                          isYours={isYours}
+                          showOwner={false}
+                          kickable={kicks.length > 0}
+                          kickPositions={kicks.map((kick) => kick.position)}
+                          stealableIndexes={steals.map((steal) => steal.index)}
+                          onKick={(position) =>
+                            selectedCardId &&
+                            dispatch({ type: 'kick', cardId: selectedCardId, meldId: meld.id, position })
+                          }
+                          onSteal={(index) =>
+                            selectedCardId &&
+                            dispatch({ type: 'stealJoker', meldId: meld.id, index, cardId: selectedCardId })
+                          }
+                        />
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })
         )}
       </div>
 

@@ -15,6 +15,8 @@ export interface MeldViewProps {
   meld: Meld
   ownerName: string
   isYours: boolean
+  /** Hide the owner label — used when several melds are already grouped under one. */
+  showOwner?: boolean
   /** Highlight because the selected card can be kicked here. */
   kickable?: boolean
   /** Indexes of Jokers the selected card could buy. */
@@ -28,6 +30,7 @@ export function MeldView({
   meld,
   ownerName,
   isYours,
+  showOwner = true,
   kickable = false,
   stealableIndexes = [],
   onKick,
@@ -48,10 +51,12 @@ export function MeldView({
       ].join(' ')}
     >
       <div className="mb-1 flex items-baseline justify-between gap-2">
-        <span className="text-[10px] font-medium uppercase tracking-wide text-white/50">
-          {isYours ? 'You' : ownerName}
-        </span>
-        <span className="text-[10px] text-white/40">{describeMeld(meld)}</span>
+        {showOwner && (
+          <span className="text-[10px] font-medium uppercase tracking-wide text-white/50">
+            {isYours ? 'You' : ownerName}
+          </span>
+        )}
+        <span className="ml-auto text-[10px] text-white/40">{describeMeld(meld)}</span>
       </div>
 
       <div className="flex items-center gap-1">
